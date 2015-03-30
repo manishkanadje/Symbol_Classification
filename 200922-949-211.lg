@@ -1,0 +1,21 @@
+# IUD, "200922-949-211.ink"
+# [ OBJECTS ]
+# Primitive Nodes (N): 5
+#    Objects (O): 4
+O, 2:3:, +, 1.0, 2, 3
+O, 0:, q, 1.0, 0
+O, 1:, h, 1.0, 1
+O, 4:, c, 1.0, 4
+
+# [ RELATIONSHIPS ]
+# Primitive Edges (E): 7 (2 merge, 5 relationship)
+#    Object Relationships (R): 3
+R, 0:, 1:, Sup, 1.0
+R, 1:, 2:3:, Right, 1.0
+R, 2:3:, 4:, Right, 1.0
+
+# [ SUMMARY ]
+# Primitive Nodes (N): 5
+#    Objects (O): 4
+# Primitive Edges (E): 7 (2 merge, 5 relationship)
+#    Object Relationships (R): 3
