@@ -21,8 +21,8 @@ def featureExtraction(f):
     symbolList, labelList = getStrokeIds(lg_file)
     #symbolList = [['0'], ['1'], ['2', '3'], ['4']]
     #labelList = ['q', 'h', '+', 'c']
-    print(symbolList)
-    print(labelList)
+    #print(symbolList)
+    #print(labelList)
     for i in range(len(symbolList)):
         symbol = symbolList[i]
         resampleCoordinates = nl.resampleSymbol(coordinates, symbol)
@@ -125,13 +125,15 @@ def calculateCurvatureAngle(prevPoint, point, nextPoint):
 def fileCall():
     global featureData, labelData
     trainingFolderPath = "./TrainINKML_v3/"
-##    trainingPaths = [trainingFolderPath + f + "/" for f in os.listdir(trainingFolderPath) if os.path.isdir(trainingFolderPath + f)]
-    trainingPaths = [trainingFolderPath + "MfrDB/"]
+    trainingPaths = [trainingFolderPath + f + "/" for f in os.listdir(trainingFolderPath) if os.path.isdir(trainingFolderPath + f)]
+    # For a specific folder
+    # trainingPaths = [trainingFolderPath + "MfrDB/"]
     print(trainingPaths)
     
     for path in trainingPaths:
         files = [path + f for f in os.listdir(path) if os.path.isfile(path + f) and f.endswith(".inkml")]
-        files = [path + 'MfrDB0033.inkml']
+        # for a specific file in that folder
+        # files = [path + 'MfrDB0033.inkml']
         for inkml_file in files:
             print(inkml_file)
             
@@ -145,8 +147,6 @@ def fileCall():
             if not os.path.exists(lg_file):
                 parser.convertInkmlToLg(inkml_file)
             symbolList, labelList = getStrokeIds(lg_file)
-        ##    print(symbolList)
-        ##    print()
             featureExtraction(inkml_file)
         #pdb.set_trace()
     return featureData, labelData
