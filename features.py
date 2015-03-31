@@ -3,6 +3,7 @@ import normalize as nl
 import pdb
 import fnmatch
 import os
+import parser
 
 featureData = []
 labelData = []
@@ -10,10 +11,18 @@ labelData = []
 def featureExtraction(f):
     global featureData, labelData
     # Update to read all training files
-    coordinates = nl.readFile(f + '.csv') 
-    symbolList, labelList = getStrokeIds(f + '.lg')
+    
+    basename = f[f.rfind('/') + 1:f.rfind('.')]
+    path = f[:f.rfind('/') + 1]
+    lg_file = path + 'lg/' + basename + '.lg'        
+    csv_file = path + 'csv/' + basename + '.csv'
+    
+    coordinates = nl.readFile(csv_file) 
+    symbolList, labelList = getStrokeIds(lg_file)
     #symbolList = [['0'], ['1'], ['2', '3'], ['4']]
     #labelList = ['q', 'h', '+', 'c']
+    print(symbolList)
+    print(labelList)
     for i in range(len(symbolList)):
         symbol = symbolList[i]
         resampleCoordinates = nl.resampleSymbol(coordinates, symbol)
@@ -115,16 +124,32 @@ def calculateCurvatureAngle(prevPoint, point, nextPoint):
 
 def fileCall():
     global featureData, labelData
-    files = [f.split('.')[0] for f in os.listdir('.') if os.path.isfile(f) and f.endswith(".csv")]
-    print(files)
-
-    for f in files:
-    ##    symbolList, labelList = getStrokeIds(f + '.lg')
-    ##    print(f)
-    ##    for i in range(len(symbolList)):
-    ##        print(symbolList[i], " -> ", labelList[i])
-    ##    print()
-        featureExtraction(f)
-    #pdb.set_trace()
+    trainingFolderPath = "./TrainINKML_v3/"
+##    trainingPaths = [trainingFolderPath + f + "/" for f in os.listdir(trainingFolderPath) if os.path.isdir(trainingFolderPath + f)]
+    trainingPaths = [trainingFolderPath + "MfrDB/"]
+    print(trainingPaths)
+    
+    for path in trainingPaths:
+        files = [path + f for f in os.listdir(path) if os.path.isfile(path + f) and f.endswith(".inkml")]
+        files = [path + 'MfrDB0033.inkml']
+        for inkml_file in files:
+            print(inkml_file)
+            
+            basename = inkml_file[inkml_file.rfind('/') + 1:inkml_file.rfind('.')]
+            path = inkml_file[:inkml_file.rfind('/') + 1]
+            lg_file = path + 'lg/' + basename + '.lg'        
+            csv_file = path + 'csv/' + basename + '.csv'
+            
+            if not os.path.exists(csv_file):
+                parser.convertStrokesToCsv(inkml_file)
+            if not os.path.exists(lg_file):
+                parser.convertInkmlToLg(inkml_file)
+            symbolList, labelList = getStrokeIds(lg_file)
+        ##    print(symbolList)
+        ##    print()
+            featureExtraction(inkml_file)
+        #pdb.set_trace()
     return featureData, labelData
+
+print(fileCall())
 

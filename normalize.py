@@ -142,3 +142,4 @@ def eucledianDist(point1, point2):
 
     
 #widthNormalizeFile('exp.csv')
+
