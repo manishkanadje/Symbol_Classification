@@ -32,16 +32,14 @@ def duplicatePointRemoval(inputPoints):
         containerMap[key] = 1
     return outputPoints
 
-
             
-def widthNormalizeStroke(coordinates, strokeList):
-    
+def widthNormalizeStroke(coordinatesList):
+    normalCoordinatesList = []
     xCord = []
     yCord = []
-    for id in strokeList:
-        for coord in coordinates[id]:
-            xCord.append(coord[0])
-            yCord.append(coord[1])    
+    for coord in coordinatesList:
+        xCord.append(coord[0])
+        yCord.append(coord[1])    
     yMin = min(yCord)
     yMax = max(yCord)
     xMin = min(xCord)
@@ -50,20 +48,18 @@ def widthNormalizeStroke(coordinates, strokeList):
     maxXDiff = xMax - xMin
 
     if maxYDiff == 0:
-        pdb.set_trace()
-        
-    aspectRatio = (xMax - xMin)/float((yMax - yMin))
+        maxYDiff = 1
+    if maxXDiff == 0:
+        maxXDiff = 1
+    aspectRatio = (maxXDiff)/float(maxYDiff)
     expectedYValue = 1
     expectedXValue = aspectRatio * expectedYValue
-    newCoordinates = {}
-    for key in strokeList:
-        newCoordinates[key] = []
-        for i in range(len(coordinates[key])):
-            newX= xMax - ((xMax - coordinates[key][i][0]) * \
-            expectedXValue / maxXDiff)
-            newY= (yMax - coordinates[key][i][1]) * \
-            expectedYValue / maxYDiff
-            newCoordinates[key].append([newX, newY])
+    for i in range(len(coordinatesList)):
+        newX= expectedXValue - ((xMax - coordinatesList[i][0]) * \
+                expectedXValue / maxXDiff)
+        newY= (yMax - coordinatesList[i][1]) * \
+                expectedYValue / maxYDiff
+        normalCoordinatesList.append([newX, newY, coordinatesList[i][2]])
 
     # if (strokeList[0] == '7'):
     #     pdb.set_trace()
@@ -82,7 +78,7 @@ def widthNormalizeStroke(coordinates, strokeList):
     #savefig(fileName + strokeList[0] + '.png', bbox_inches = 'tight', pad_inches = 0)
     #close()
     #smoothing(fileName)
-    return newCoordinates
+    return normalCoordinatesList
 
 def smoothing(fileName):
     figure = scipy.ndimage.imread(fileName + '.png')
@@ -92,49 +88,47 @@ def smoothing(fileName):
 
 def resampleSymbol(coordinates, strokeList):
     numberElements = len(strokeList)
-    newCoordinates = {}
-    lengthMap = {}
-    totalPoints = 0.0
+    symbolList = []
+    pointToStroke = {}
+    strokeList.sort(key = int)
     for stroke in strokeList:
-        newCoordinates[stroke] = coordinates[stroke]
-        lengthMap[stroke] = len(coordinates[stroke])
-        totalPoints += len(coordinates[stroke])
-    resamplePointMap = getResampleNumbers(numberElements, lengthMap, totalPoints)
-    resampleCoordinates = resamplePoints(newCoordinates, resamplePointMap)
+        symbolList += coordinates[stroke]
+        for point in coordinates[stroke]:
+            pointToStroke[str(point[0]) + str(point[1])] = stroke
+    resampleCoordinatesList = resamplePoints(symbolList, pointToStroke)
+    return resampleCoordinatesList
 
-    return resampleCoordinates
+#def getResampleNumbers(number, lengthMap, totalPoints):
+    #global RESAMPLE_POINTS
+    #concernedPoints = RESAMPLE_POINTS
+    #distributedLength = {}
+    #finalLength = 0
+    ##pdb.set_trace()
+    #for key in lengthMap.keys():
+        #if (lengthMap[key] == 1 or lengthMap[key] == 2):
+            #distributedLength[key] = lengthMap[key]
+            #concernedPoints -= lengthMap[key]
+            #totalPoints -= lengthMap[key]
+        #else:
+            #distributedLength[key] = 0
 
-def getResampleNumbers(number, lengthMap, totalPoints):
-    global RESAMPLE_POINTS
-    concernedPoints = RESAMPLE_POINTS
-    distributedLength = {}
-    finalLength = 0
-    #pdb.set_trace()
-    for key in lengthMap.keys():
-        if (lengthMap[key] == 1 or lengthMap[key] == 2):
-            distributedLength[key] = lengthMap[key]
-            concernedPoints -= lengthMap[key]
-            totalPoints -= lengthMap[key]
-        else:
-            distributedLength[key] = 0
-
-    # Update to incoporate for single points strokes symbol
-    if totalPoints != 0:
-        ratio = concernedPoints/totalPoints
-        tempMap = {}
-        for key in lengthMap.keys():
-            if (distributedLength[key] != 1 and distributedLength[key] != 2):
-                tempMap[key] = int(ratio * lengthMap[key])
-                finalLength += int(ratio * lengthMap[key])
-    #pdb.set_trace()
-        differencePoints = concernedPoints - finalLength
-        while (differencePoints != 0):
-            key = random.choice(list(tempMap.keys()))
-            tempMap[key] += 1
-            differencePoints -= 1
-        distributedLength.update(tempMap)
-    #pdb.set_trace()
-    return distributedLength
+    ## Update to incoporate for single points strokes symbol
+    #if totalPoints != 0:
+        #ratio = concernedPoints/totalPoints
+        #tempMap = {}
+        #for key in lengthMap.keys():
+            #if (distributedLength[key] != 1 and distributedLength[key] != 2):
+                #tempMap[key] = int(ratio * lengthMap[key])
+                #finalLength += int(ratio * lengthMap[key])
+    ##pdb.set_trace()
+        #differencePoints = concernedPoints - finalLength
+        #while (differencePoints != 0):
+            #key = random.choice(list(tempMap.keys()))
+            #tempMap[key] += 1
+            #differencePoints -= 1
+        #distributedLength.update(tempMap)
+    ##pdb.set_trace()
+    #return distributedLength
     
 # def getResampleNumbers(number):
 #     global RESAMPLE_POINTS
@@ -146,54 +140,46 @@ def getResampleNumbers(number, lengthMap, totalPoints):
 #         resampleList[i] += 1
 #     return resampleList
 
-def resamplePoints(coordinates, pointsMap):
-    global debugCount
-    newCoordinates = {}
-
-    for key in coordinates.keys():
-        numberResamplePoints = pointsMap[key]
-
-        if numberResamplePoints == 0:
-            pdb.set_trace()
-        accStrokeLength = []
-        accStrokeLength.append(0)
-        for i in range(len(coordinates[key]) - 1):
-            accStrokeLength.append(accStrokeLength[i] + \
-                        eucledianDist(coordinates[key][i], \
-                            coordinates[key][i + 1]))
-        #resampleDist = int(accStrokeLength[len(accStrokeLength) - 
-        #1]/numberResamplePoints)
-        resampleDist = accStrokeLength[len(accStrokeLength) - 
-        1]/numberResamplePoints
-        newPointList = []
-        begin = coordinates[key][0]
-        newPointList.append(begin)
-        #pdb.set_trace()
-        j = 1
-        for p in range(1, (numberResamplePoints - 1)):
-            #pdb.set_trace()
-            debugCount += 1
-            while accStrokeLength[j] < (p * resampleDist):
-                j += 1
-            interpolationFactor = (p * resampleDist - accStrokeLength[j - 1])/ \
-                (accStrokeLength[j] - accStrokeLength[j - 1])
-            newX = coordinates[key][j - 1][0] + (coordinates[key][j][0] - \
-                                                 coordinates[key][j - 1][0]) * \
-                                                 interpolationFactor
-            newY = coordinates[key][j - 1][1] + (coordinates[key][j][1] - \
-                                                 coordinates[key][j - 1][1]) * \
-                                                 interpolationFactor
-            newPointList.append([newX, newY])
-
-        
-        lastElement = len(coordinates[key]) - 1
-        # Consider for list containing one element
-        if (lastElement > 0):
-            newPointList.append([coordinates[key][lastElement][0], \
-                                coordinates[key][lastElement][1]])
-        newCoordinates[key] = newPointList
+def resamplePoints(symbolList, pointToStroke):
+    global RESAMPLE_POINTS
+    accStrokeLength = []
+    accStrokeLength.append(0)
+    for i in range(len(symbolList) - 1):
+        accStrokeLength.append(accStrokeLength[i] + \
+                eucledianDist(symbolList[i], symbolList[i + 1]))
+    #resampleDist = int(accStrokeLength[len(accStrokeLength) - 
+    #1]/numberResamplePoints)
+    resampleDist = accStrokeLength[len(accStrokeLength) - 1]/RESAMPLE_POINTS
+    newPointList = []
+    # First and Last elements will never be interpolated
+    begin = symbolList[0]
+    begin.append(1)
+    newPointList.append(begin)
     #pdb.set_trace()
-    return newCoordinates
+    j = 1
+    for p in range(1, (RESAMPLE_POINTS - 1)):
+        #pdb.set_trace()
+        while accStrokeLength[j] < (p * resampleDist):
+            j += 1
+        interpolationFactor = (p * resampleDist - accStrokeLength[j - 1])/ \
+                              (accStrokeLength[j] - accStrokeLength[j - 1])
+        newX = symbolList[j - 1][0] + (symbolList[j][0] - \
+                                    symbolList[j - 1][0]) * interpolationFactor
+        newY = symbolList[j - 1][1] + (symbolList[j][1] - \
+                                             symbolList[j - 1][1]) * \
+                                             interpolationFactor
+        key1 = str(symbolList[j - 1][0]) + str(symbolList[j - 1][1])
+        key2 = str(symbolList[j][0]) + str(symbolList[j][1])
+        interpolationFlag = -1
+        if (pointToStroke[key1] == pointToStroke[key2]):
+            interpolationFlag = 1
+        newPointList.append([newX, newY, interpolationFlag])
+    lastElement = len(symbolList) - 1
+    # Consider for list containing one element
+    newPointList.append([symbolList[lastElement][0], \
+            symbolList[lastElement][1], 1])
+    #pdb.set_trace()
+    return newPointList
 
                                              
 def eucledianDist(point1, point2):
@@ -201,9 +187,13 @@ def eucledianDist(point1, point2):
     yDist = point1[1] - point2[1]
     return math.sqrt(math.pow(xDist, 2) + math.pow(yDist, 2))           
 
-
+# Connects all the strokes in the symbol and gives a flag of -1 if the point is 
+# interpolated and 1 otherwise.
+def createConnectedSymbol(coordinates, strokeList):
+    return 1
 
 
     
 #widthNormalizeFile('exp.csv')
+
 
