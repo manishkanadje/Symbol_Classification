@@ -47,12 +47,12 @@ def featureExtraction(f):
             
             #pdb.set_trace() 
             # Add curvature angle as feature
-            #angleAddedList = \
-            #        getCurvatureFeature(nsedAddedList)
+            angleAddedList = \
+                    getCurvatureFeature(nsedAddedList)
             
             #pdb.set_trace()
             pointList = []
-            for feature in nsedAddedList:
+            for feature in angleAddedList:
                 pointList += feature
             #pdb.set_trace()
             featureList = createAllFeatures(pointList)
@@ -61,10 +61,6 @@ def featureExtraction(f):
             labelData.append(labelList[i])
             #print ('Data Index : ', dataIndex)
             dataIndex += 1
-    #pdb.set_trace()
-    # Delete this
-    #print (featureData)
-    #print (labelData)
     return featureData, labelData
     
 def validSymbol(symbol, coordinates):
@@ -139,17 +135,20 @@ def getCurvatureFeature(stroke):
 
 def calculateCurvatureAngle(prevPoint, point, nextPoint):
     #pdb.set_trace()
-    angle = -100.0
     vector1 = array([point[0] - prevPoint[0], point[1] - prevPoint[1]])
-    print (vector1)
     vector2 = array([nextPoint[0] - point[0], nextPoint[1] - point[1]])
-    print (vector2)
-    angle = arccos(dot(vector1, vector2)/sqrt(dot(vector1, vector1) * dot(vector2, 
-        vector2)))
-    if angle is nan:
-        angle = -100.0
-    print (angle)
-    #pdb.set_trace()
+    numerator = dot(vector1, vector2)
+    #print (numerator)
+    denominator = sqrt(dot(vector1, vector1) * dot(vector2, vector2))
+    #print (denominator)
+    value = numerator/denominator
+    if value > 1:
+        value = 1
+    if value < -1:
+        value = -1
+    angle = arccos(value)
+    if (isnan(angle)):
+        angle = pi
     return angle
 
 def fileCall():
@@ -182,7 +181,7 @@ def fileCall():
             symbolList, labelList = getStrokeIds(lg_file)
             # Debug point
             if (inkml_file 
-                =='./TrainINKML_v3/expressmatch/116_carlos.inkml'):
+                =='./TrainINKML_v3/KAIST/KME1G3_0_sub_10.inkml'):
                 pdb.set_trace()
             featureExtraction(inkml_file)
             print ("Done Processing :", inkml_file)

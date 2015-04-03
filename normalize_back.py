@@ -8,8 +8,8 @@ import random
 
 RESAMPLE_POINTS = 30
 
-# Reads the csv file and creates a dictionary of coordinates belonging to each
-# stroke
+debugCount = 0
+
 def readFile(fileName):
     inputFile = open(fileName, 'rU', newline = '\n')
     csvReader = csv.reader(inputFile, delimiter = ',')
@@ -21,7 +21,7 @@ def readFile(fileName):
             coordinates[line[0]].append([float(lineList[0]), float(lineList[1])])
     return coordinates
 
-# Removes the duplicate points from the given list of coordinates
+
 def duplicatePointRemoval(inputPoints):
     containerMap = {}
     outputPoints = []
@@ -32,8 +32,7 @@ def duplicatePointRemoval(inputPoints):
         containerMap[key] = 1
     return outputPoints
 
-# Normalizes the given list of coordinates. Y coodinates is scaled within 0 and
-# 1. X coordinate is scaled based on the original aspect ratio of the symbol.
+            
 def widthNormalizeStroke(coordinatesList):
     normalCoordinatesList = []
     xCord = []
@@ -87,8 +86,6 @@ def smoothing(fileName):
     figure = scipy.ndimage.gaussian_filter(figure, sigma = 2)
     #savefig(fileName + '_gaussian.png', bbox_inches = 'tight', pad_inches = 0)
 
-# Resmaples symbol represented by strokeList into a single list containing
-# 30 points for each symbol.
 def resampleSymbol(coordinates, strokeList):
     numberElements = len(strokeList)
     symbolList = []
@@ -101,9 +98,48 @@ def resampleSymbol(coordinates, strokeList):
     resampleCoordinatesList = resamplePoints(symbolList, pointToStroke)
     return resampleCoordinatesList
 
-# Implementation of interpolation algorithm for resmapling the symbol into 30
-# points. If the point does not exist in the original stroke it has a new
-# attribute valued -1 otherwise 1.
+#def getResampleNumbers(number, lengthMap, totalPoints):
+    #global RESAMPLE_POINTS
+    #concernedPoints = RESAMPLE_POINTS
+    #distributedLength = {}
+    #finalLength = 0
+    ##pdb.set_trace()
+    #for key in lengthMap.keys():
+        #if (lengthMap[key] == 1 or lengthMap[key] == 2):
+            #distributedLength[key] = lengthMap[key]
+            #concernedPoints -= lengthMap[key]
+            #totalPoints -= lengthMap[key]
+        #else:
+            #distributedLength[key] = 0
+
+    ## Update to incoporate for single points strokes symbol
+    #if totalPoints != 0:
+        #ratio = concernedPoints/totalPoints
+        #tempMap = {}
+        #for key in lengthMap.keys():
+            #if (distributedLength[key] != 1 and distributedLength[key] != 2):
+                #tempMap[key] = int(ratio * lengthMap[key])
+                #finalLength += int(ratio * lengthMap[key])
+    ##pdb.set_trace()
+        #differencePoints = concernedPoints - finalLength
+        #while (differencePoints != 0):
+            #key = random.choice(list(tempMap.keys()))
+            #tempMap[key] += 1
+            #differencePoints -= 1
+        #distributedLength.update(tempMap)
+    ##pdb.set_trace()
+    #return distributedLength
+    
+# def getResampleNumbers(number):
+#     global RESAMPLE_POINTS
+#     complete = int(RESAMPLE_POINTS/number)
+#     difference = RESAMPLE_POINTS - complete * number
+#     resampleList = [complete for i in range(number)]
+#     #pdb.set_trace()
+#     for i in range(difference):
+#         resampleList[i] += 1
+#     return resampleList
+
 def resamplePoints(symbolList, pointToStroke):
     global RESAMPLE_POINTS
     accStrokeLength = []
@@ -139,15 +175,24 @@ def resamplePoints(symbolList, pointToStroke):
             interpolationFlag = 1
         newPointList.append([newX, newY, interpolationFlag])
     lastElement = len(symbolList) - 1
-    newPointList.append([symbolList[lastElement][0], symbolList[lastElement][1], 1])
+    # Consider for list containing one element
+    newPointList.append([symbolList[lastElement][0], \
+            symbolList[lastElement][1], 1])
     #pdb.set_trace()
     return newPointList
 
-# Calculate the Eucledian distance between point1 and point2.
+                                             
 def eucledianDist(point1, point2):
     xDist = point1[0] - point2[0]
     yDist = point1[1] - point2[1]
     return math.sqrt(math.pow(xDist, 2) + math.pow(yDist, 2))           
+
+# Connects all the strokes in the symbol and gives a flag of -1 if the point is 
+# interpolated and 1 otherwise.
+def createConnectedSymbol(coordinates, strokeList):
+    return 1
+
+
     
 #widthNormalizeFile('exp.csv')
 
