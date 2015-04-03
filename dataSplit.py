@@ -10,7 +10,7 @@ import features as feat
 import copy
 
 dataPriorList = []
-RANDOM_SWAPS = 100
+RANDOM_SWAPS = 10
 
 def readAllInputData():
     # Final Data Structures
@@ -24,7 +24,7 @@ def readAllInputData():
     # trainingPaths = [trainingFolderPath + "MfrDB/"]
     
     #for i in range(len(trainingPaths)):
-    for i in range(3):
+    for i in range(6):
         path = trainingPaths[i]
         files = [path + f for f in os.listdir(path) if os.path.isfile(path + f) and f.endswith(".inkml")]
         # for a specific file in that folder
@@ -34,17 +34,18 @@ def readAllInputData():
                 
             basename = inkml_file[inkml_file.rfind('/') + 1:inkml_file.rfind('.')]
             path = inkml_file[:inkml_file.rfind('/') + 1]
-            lg_file = path + 'lg/' + basename + '.lg'        
+            #lg_file = path + 'lg/' + basename + '.lg'        
+            inkmlFile = path + basename + '.inkml'        
             csv_file = path + 'csv/' + basename + '.csv'
             
             if not os.path.exists(csv_file):
                 parser.convertStrokesToCsv(inkml_file)
-            if not os.path.exists(lg_file):
-                parser.convertInkmlToLg(inkml_file)
+            #if not os.path.exists(lg_file):
+            #    parser.convertInkmlToLg(inkml_file)
 
             # Dictionary which contains the list of symbols which are present
             # in csv_files
-            symbolList, labelList = feat.getStrokeIds(lg_file)
+            symbolList, labelList = feat.getStrokeIds(inkmlFile)
             fileLabelsData[csv_file] = labelList
             for label in labelList:
                 if label not in labelPriors:

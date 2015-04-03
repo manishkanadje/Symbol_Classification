@@ -20,10 +20,13 @@ def featureExtraction(f):
     basename = f[f.rfind('/') + 1:f.rfind('.')]
     path = f[:f.rfind('/')]
     path = path[:path.rfind('/') + 1]
-    lg_file = path + 'lg/' + basename + '.lg'        
+    #lg_file = path + 'lg/' + basename + '.lg'        
+    lg_file = path + basename + '.inkml'        
     csv_file = path + 'csv/' + basename + '.csv'
     
-    coordinates = nl.readFile(csv_file) 
+    coordinates = nl.readFile(csv_file)
+    if (len(coordinates.keys()) == 1 and '2' in coordinates):
+        pdb.set_trace()
     symbolList, labelList = getStrokeIds(lg_file)
 
     #pdb.set_trace()
@@ -32,7 +35,8 @@ def featureExtraction(f):
 
     for i in range(len(symbolList)):
         symbol = symbolList[i]
-        
+        print (lg_file)
+        #if (True):
         if (validSymbol(symbol, coordinates)):
             #pdb.set_trace()
             resampleCoordinatesList = nl.resampleSymbol(coordinates, symbol)
@@ -76,6 +80,8 @@ def validSymbol(symbol, coordinates):
     flag = False
     #pdb.set_trace()
     for point in symbol:
+        if point not in coordinates:
+            pdb.set_trace()
         if (len(coordinates[point]) > 1):
             flag = True
     return flag

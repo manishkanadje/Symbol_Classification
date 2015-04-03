@@ -26,7 +26,7 @@ def duplicatePointRemoval(inputPoints):
     containerMap = {}
     outputPoints = []
     for point in inputPoints:
-        key = str(point[0]) + str(point[1])
+        key = str(point[0]) + ',' + str(point[1])
         if key not in containerMap:
             outputPoints.append(point)
         containerMap[key] = 1
