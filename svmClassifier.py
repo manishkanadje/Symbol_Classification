@@ -6,20 +6,40 @@ from random import *
 
 import normalize as nl
 import features as feat
+import dataSplit as dsp
 
 def getTrainingData():
-    featureList, labelList = feat.fileCall()
+    trainData, testData = dsp.updateSplits()
+    trainingFeatures = []
+    trainingLabels = []
+
+    testFeatures = []
+    testLabels = []
+    #featureList, labelList = feat.fileCall()
     #pdb.set_trace()
     #svmClassifier = svm.SVC()
+    for file in trainData:
+        #pdb.set_trace()
+        #trainingFeatures, trainingLabels = feat.featureExtraction(file)
+        tempTrainData, tempTrainLabels = feat.featureExtraction(file)
+        trainingFeatures += tempTrainData
+        trainingLabels += tempTrainLabels
+
+    for file in testData:
+        #testFeatures, testLabels = feat.featureExtraction(file)
+        tempTestData, tempTestLabels = feat.featureExtraction(file)
+        testFeatures += tempTestData
+        testLabels += tempTestLabels
+    #pdb.set_trace()
     rndClassifier = ensemble.RandomForestClassifier(n_estimators = 500)
-    print len(featureList)
-    trainData, trainLabels, testData, testLabels = splitData(featureList, labelList)
+    #print (len(featureList))
+    #trainData, trainLabels, testData, testLabels = splitData(featureList, labelList)
     #svmClassifier.fit(trainData, trainLabels)
-    print len(trainData)
-    print len(testData)
-    rndClassifier.fit(trainData, trainLabels)
+    #print len(trainData)
+    #print len(testData)
+    rndClassifier.fit(trainingFeatures, trainingLabels)
     #results = svmClassifier.predict(testData)
-    results = rndClassifier.predict(testData)
+    results = rndClassifier.predict(testFeatures)
     count  = 0
     for i in range(len(results)):
         if (results[i] == testLabels[i]):

@@ -24,7 +24,7 @@ def readAllInputData():
     # trainingPaths = [trainingFolderPath + "MfrDB/"]
     
     #for i in range(len(trainingPaths)):
-    for i in range(1):
+    for i in range(3):
         path = trainingPaths[i]
         files = [path + f for f in os.listdir(path) if os.path.isfile(path + f) and f.endswith(".inkml")]
         # for a specific file in that folder
@@ -67,6 +67,8 @@ def createSplits():
         dataPriorList.append(labelPriors[label]/float(labelCount))
     testData = {}
     testPriors = {}
+    for key in labelPriors:
+        testPriors[key] = 0
     testCount = 0
     for i in range(testSize):
         randomIndex = randrange(0, len(fileLabelData))
@@ -74,10 +76,7 @@ def createSplits():
         labelList = fileLabelData[fileName]
         testData[fileName] = labelList
         for label in labelList:
-            if label not in testPriors:
-                testPriors[label] = 1
-            else:
-                testPriors[label] += 1
+            testPriors[label] += 1
             labelPriors[label] -= 1
             testCount += 1
         fileLabelData.pop(fileName, labelList)
@@ -109,23 +108,31 @@ def updateSplits():
     print ("###############################")
     print ("Initial KL Divergence")
     divergenceKL = scipy.stats.entropy(trainPriorList, dataPriorList)
+    print (divergenceKL)
     print ("###############################")
-    pdb.set_trace()
+    #pdb.set_trace()
     for i in range(RANDOM_SWAPS):
         swapTrainElements, swapTrainList, swapTestElements, swapTestList = \
             swapDistributions(trainData, \
             trainLabelList, trainCountList, trainPriorList, trainCount,
              testData, testLabelList, testCountList, testPriorList, testCount)
+        #pdb.set_trace()
         print ("###############################")
-        print ("KL Divergence for after swap", i + 1)
+        print ("KL Divergence after swap", i + 1)
+
+        #if i > 0:
+        #    print (scipy.stats.entropy(swapTrainList, prevTrainList))
         updateDKL = scipy.stats.entropy(swapTrainList, dataPriorList)
+        prevTrainList = swapTrainList
         print (updateDKL)
         print ("###############################")
         if (updateDKL < divergenceKL):
+            print ("Update Sample")
             swapDataFromDict(trainData, testData, swapTrainElements)
             swapDataFromDict(testData, trainData, swapTestElements)
             divergenceKL = updateDKL
-    pdb.set_trace()
+    #pdb.set_trace()
+    return trainData, testData
     print ("Done")
     
 
@@ -147,7 +154,8 @@ def swapDistributions(trainData, trainLabelList, trainCountList, trainPriorList,
     updateTestCountList = copy.deepcopy(testCountList)
     updateTrainPriorList = copy.deepcopy(trainPriorList)
     updateTestPriorList = copy.deepcopy(testPriorList)
-    for i in range(RANDOM_SWAPS):
+    for j in range(RANDOM_SWAPS):
+        i = randrange(0, len(trainFileNameList))
         # Swap from train data
         trainFileName = trainFileNameList[i]
         trainLabel = trainData[trainFileName]
@@ -161,7 +169,8 @@ def swapDistributions(trainData, trainLabelList, trainCountList, trainPriorList,
             updateTestPriorList[labelIndex] = \
                 updateTestCountList[labelIndex]/float(testCount)
         trainKeyValueList.append([trainFileName, trainLabel])
-    
+
+        i = randrange(0, len(testFileNameList))
         testFileName = testFileNameList[i]
         testLabel = testData[testFileName]
 
@@ -178,4 +187,4 @@ def swapDistributions(trainData, trainLabelList, trainCountList, trainPriorList,
     return trainKeyValueList, updateTrainPriorList, testKeyValueList, \
       updateTestPriorList
 
-updateSplits()
+#updateSplits()

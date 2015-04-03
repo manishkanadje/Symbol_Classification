@@ -5,16 +5,20 @@ import fnmatch
 import os
 import parser
 
-featureData = []
-labelData = []
+#featureData = []
+#labelData = []
 dataIndex = 0
 
 def featureExtraction(f):
-    global featureData, labelData, dataIndex
+    #global featureData, labelData, dataIndex
+    global dataIndex
     # Update to read all training files
-    
+    featureData = []
+    labelData = []
+    #pdb.set_trace()
     basename = f[f.rfind('/') + 1:f.rfind('.')]
-    path = f[:f.rfind('/') + 1]
+    path = f[:f.rfind('/')]
+    path = path[:path.rfind('/') + 1]
     lg_file = path + 'lg/' + basename + '.lg'        
     csv_file = path + 'csv/' + basename + '.csv'
     
@@ -51,8 +55,11 @@ def featureExtraction(f):
                     getCurvatureFeature(nsedAddedList)
             
             #pdb.set_trace()
+            diffCenterAddedList = getDifferenceFromCenter(nsedAddedList)
+
+            finalFeatureList = diffCenterAddedList
             pointList = []
-            for feature in angleAddedList:
+            for feature in finalFeatureList:
                 pointList += feature
             #pdb.set_trace()
             featureList = createAllFeatures(pointList)
@@ -61,6 +68,7 @@ def featureExtraction(f):
             labelData.append(labelList[i])
             #print ('Data Index : ', dataIndex)
             dataIndex += 1
+    #pdb.set_trace()
     return featureData, labelData
     
 def validSymbol(symbol, coordinates):
@@ -150,6 +158,14 @@ def calculateCurvatureAngle(prevPoint, point, nextPoint):
     if (isnan(angle)):
         angle = pi
     return angle
+
+def getDifferenceFromCenter(stroke):
+    middleIndex = nl.RESAMPLE_POINTS/2
+    middlePoint = stroke[int(middleIndex)]
+    for point in stroke:
+        point.append(point[0] - middlePoint[0])
+        point.append(point[1] - middlePoint[1])
+    return stroke
 
 def fileCall():
     global featureData, labelData
