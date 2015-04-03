@@ -1,4 +1,5 @@
 from pylab import *
+from xml.dom import minidom
 import normalize as nl
 import pdb
 import fnmatch
@@ -81,14 +82,17 @@ def validSymbol(symbol, coordinates):
 
 
 def getStrokeIds(fileName):
+    xmldoc = minidom.parse(fileName)
+    itemlist = xmldoc.getElementsByTagName('traceGroup')[0].getElementsByTagName('traceGroup')
     symbolList, labelList = [], []
-    inputFile = open(fileName, 'rU', newline = '\n')
-    for line in inputFile:
-        words = [x.strip() for x in line.split(',')]
-        if words[0] == 'O':
-            symbolList.append(words[4:])
-            labelList.append(words[2])
+    for tGroup in itemlist:
+        labelList.append(tGroup.getElementsByTagName('annotation')[0].firstChild.nodeValue)
         
+        strokes = tGroup.getElementsByTagName('traceView')
+        strokeList = []
+        for stroke in strokes:
+            strokeList.append(stroke.attributes["traceDataRef"].nodeValue)
+        symbolList.append(strokeList)
     return symbolList, labelList
 
 def createAllFeatures(pointList):
@@ -172,19 +176,18 @@ def fileCall():
     trainingFolderPath = "./TrainINKML_v3/"
     trainingPaths = [trainingFolderPath + f + "/" for f in os.listdir(trainingFolderPath) if os.path.isdir(trainingFolderPath + f)]
     # For a specific folder
-    # trainingPaths = [trainingFolderPath + "MfrDB/"]
+    trainingPaths = [trainingFolderPath + "HAMEX/"]
     print(trainingPaths)
 
     loop = 0
-    #for i in range(len(trainingPaths)):
-    for i in range(3):
+    for i in range(len(trainingPaths)):
+    #for i in range(3):
         path = trainingPaths[i]
         files = [path + f for f in os.listdir(path) if os.path.isfile(path + f) and f.endswith(".inkml")]
         # for a specific file in that folder
-        # files = [path + 'MfrDB0033.inkml']
+        files = [path + 'formulaire001-equation002.inkml']
         for inkml_file in files:
             print('Start processing :', inkml_file)
-                
             basename = inkml_file[inkml_file.rfind('/') + 1:inkml_file.rfind('.')]
             path = inkml_file[:inkml_file.rfind('/') + 1]
             lg_file = path + 'lg/' + basename + '.lg'        
@@ -207,3 +210,6 @@ def fileCall():
 #print(fileCall())
 
 
+# ans = getStrokeIds("./TrainINKML_v3/HAMEX/formulaire001-equation002.inkml")
+# for i in range(len(ans[0])):
+    # print(ans[0][i], " - ", ans[1][i])
