@@ -1,10 +1,14 @@
 from pylab import *
 from sklearn import svm
 from sklearn import ensemble
+from sklearn.externals import joblib
 from xml.dom import minidom
 import pdb
 import os
+import pickle
 from random import *
+from sklearn import metrics
+import pickle
 
 import normalize as nl
 import features as feat
@@ -37,7 +41,7 @@ def getTrainingData():
         testFeatures += tempTestData
         testLabels += tempTestLabels
     #pdb.set_trace()
-    rndClassifier = ensemble.RandomForestClassifier(n_estimators = 100, max_depth = 5)
+    rndClassifier = ensemble.RandomForestClassifier(n_estimators = 500, max_depth = 15)
     
     #print (len(featureList))
     #trainData, trainLabels, testData, testLabels = splitData(featureList, labelList)
@@ -56,7 +60,7 @@ def getTrainingData():
         if (results[i] == testLabels[i]):
             count += 1
     print (count/len(testLabels))
-    #pdb.set_trace()
+    pdb.set_trace()
     print ("Done Training")
     return rndClassifier
 

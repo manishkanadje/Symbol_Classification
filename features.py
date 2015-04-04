@@ -63,9 +63,9 @@ def featureExtraction(csv_file, symbolList, labelList):
             #pdb.set_trace()
             diffCenterAddedList = getDifferenceFromCenter(nsedAddedList)
 
-            #originNormalizedList = getDifferenceFromOrigin(diffCenterAddedList)
+            originNormalizedList = getDifferenceFromOrigin(diffCenterAddedList)
             
-            finalFeatureList = diffCenterAddedList
+            finalFeatureList = originNormalizedList
             pointList = []
             for feature in finalFeatureList:
                 pointList += feature
