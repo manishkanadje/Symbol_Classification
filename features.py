@@ -35,8 +35,9 @@ def featureExtraction(f):
 
     for i in range(len(symbolList)):
         symbol = symbolList[i]
-        print (lg_file)
-        #if (True):
+        #print (lg_file)
+
+        # Ensure that the symbol is not just one point
         if (validSymbol(symbol, coordinates)):
             #pdb.set_trace()
             resampleCoordinatesList = nl.resampleSymbol(coordinates, symbol)
@@ -77,13 +78,12 @@ def featureExtraction(f):
     return featureData, labelData
     
 def validSymbol(symbol, coordinates):
-    flag = False
+    flag = True
     #pdb.set_trace()
-    for point in symbol:
-        if point not in coordinates:
-            pdb.set_trace()
-        if (len(coordinates[point]) > 1):
-            flag = True
+    if (len(symbol) == 1):
+        for point in symbol:
+            if (len(coordinates[point]) <= 1):
+                flag = False
     return flag
 
 

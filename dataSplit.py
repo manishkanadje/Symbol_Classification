@@ -10,7 +10,8 @@ import features as feat
 import copy
 
 dataPriorList = []
-RANDOM_SWAPS = 10
+RANDOM_SWAPS = 1000
+RANDOM_POINTS = 1
 
 def readAllInputData():
     # Final Data Structures
@@ -55,6 +56,7 @@ def readAllInputData():
             labelCount += 1
             
         #pdb.set_trace()
+    print ("Total Number of Symbols in the dataset", len(labelPriors.keys()))
     return labelPriors, fileLabelsData, labelCount
 
 # Create training and test splits based on distribution
@@ -133,6 +135,16 @@ def updateSplits():
             swapDataFromDict(testData, trainData, swapTestElements)
             divergenceKL = updateDKL
     #pdb.set_trace()
+
+    # Debug
+    print ("###############################")
+    print ("Train test check")
+    print ("Name of file which is coommon in training and test data")
+    print ("* There should not be any such file")
+    for trainfile in trainData:
+        if trainfile in testData:
+            print (trainfile)
+    print ("###############################")
     return trainData, testData
     print ("Done")
     
@@ -145,7 +157,7 @@ def swapDataFromDict(data1, data2, swapList):
 def swapDistributions(trainData, trainLabelList, trainCountList, trainPriorList,\
                       trainCount, testData, testLabelList, testCountList, \
                         testPriorList, testCount):
-    global RANDOM_SWAPS
+    global RANDOM_POINTS
     # Peform random swaps for improving Kullback-Leibler distacne
     trainKeyValueList = []
     testKeyValueList = []
@@ -155,7 +167,7 @@ def swapDistributions(trainData, trainLabelList, trainCountList, trainPriorList,
     updateTestCountList = copy.deepcopy(testCountList)
     updateTrainPriorList = copy.deepcopy(trainPriorList)
     updateTestPriorList = copy.deepcopy(testPriorList)
-    for j in range(RANDOM_SWAPS):
+    for j in range(RANDOM_POINTS):
         i = randrange(0, len(trainFileNameList))
         # Swap from train data
         trainFileName = trainFileNameList[i]

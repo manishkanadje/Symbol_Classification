@@ -31,13 +31,17 @@ def getTrainingData():
         testFeatures += tempTestData
         testLabels += tempTestLabels
     #pdb.set_trace()
-    rndClassifier = ensemble.RandomForestClassifier(n_estimators = 500)
+    rndClassifier = ensemble.RandomForestClassifier(n_estimators = 100, max_depth = 5)
     #print (len(featureList))
     #trainData, trainLabels, testData, testLabels = splitData(featureList, labelList)
     #svmClassifier.fit(trainData, trainLabels)
     #print len(trainData)
     #print len(testData)
+    print ("###############################")
+    print ("Training Random Forest Classifier")
     rndClassifier.fit(trainingFeatures, trainingLabels)
+    print ("Training completed")
+    print ("###############################")
     #results = svmClassifier.predict(testData)
     results = rndClassifier.predict(testFeatures)
     count  = 0

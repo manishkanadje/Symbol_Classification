@@ -97,7 +97,7 @@ def resampleSymbol(coordinates, strokeList):
     for stroke in strokeList:
         symbolList += coordinates[stroke]
         for point in coordinates[stroke]:
-            pointToStroke[str(point[0]) + str(point[1])] = stroke
+            pointToStroke[str(point[0]) + ',' + str(point[1])] = stroke
     resampleCoordinatesList = resamplePoints(symbolList, pointToStroke)
     return resampleCoordinatesList
 
@@ -123,8 +123,13 @@ def resamplePoints(symbolList, pointToStroke):
     j = 1
     for p in range(1, (RESAMPLE_POINTS - 1)):
         #pdb.set_trace()
+        if (len(accStrokeLength) == 1):
+            pdb.set_trace()
         while accStrokeLength[j] < (p * resampleDist):
             j += 1
+            # Debug
+            if j >= len(accStrokeLength):
+                pdb.set_trace()
         interpolationFactor = (p * resampleDist - accStrokeLength[j - 1])/ \
                               (accStrokeLength[j] - accStrokeLength[j - 1])
         newX = symbolList[j - 1][0] + (symbolList[j][0] - \
@@ -132,8 +137,8 @@ def resamplePoints(symbolList, pointToStroke):
         newY = symbolList[j - 1][1] + (symbolList[j][1] - \
                                              symbolList[j - 1][1]) * \
                                              interpolationFactor
-        key1 = str(symbolList[j - 1][0]) + str(symbolList[j - 1][1])
-        key2 = str(symbolList[j][0]) + str(symbolList[j][1])
+        key1 = str(symbolList[j - 1][0]) + ',' + str(symbolList[j - 1][1])
+        key2 = str(symbolList[j][0]) + ',' + str(symbolList[j][1])
         interpolationFlag = -1
         if (pointToStroke[key1] == pointToStroke[key2]):
             interpolationFlag = 1
