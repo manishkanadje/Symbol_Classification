@@ -10,24 +10,24 @@ import parser
 #labelData = []
 dataIndex = 0
 
-def featureExtraction(f):
+def featureExtraction(csv_file, symbolList, labelList):
     #global featureData, labelData, dataIndex
     global dataIndex
     # Update to read all training files
     featureData = []
     labelData = []
     #pdb.set_trace()
-    basename = f[f.rfind('/') + 1:f.rfind('.')]
-    path = f[:f.rfind('/')]
-    path = path[:path.rfind('/') + 1]
+    #basename = f[f.rfind('/') + 1:f.rfind('.')]
+    #path = f[:f.rfind('/')]
+    #path = path[:path.rfind('/') + 1]
     #lg_file = path + 'lg/' + basename + '.lg'        
-    lg_file = path + basename + '.inkml'        
-    csv_file = path + 'csv/' + basename + '.csv'
+    #lg_file = path + basename + '.inkml'        
+    #csv_file = path + 'csv/' + basename + '.csv'
     
     coordinates = nl.readFile(csv_file)
-    if (len(coordinates.keys()) == 1 and '2' in coordinates):
-        pdb.set_trace()
-    symbolList, labelList = getStrokeIds(lg_file)
+    #if (len(coordinates.keys()) == 1 and '2' in coordinates):
+    #    pdb.set_trace()
+    #symbolList, labelList = getStrokeIds(lg_file)
 
     #pdb.set_trace()
     for key in coordinates:
@@ -63,6 +63,8 @@ def featureExtraction(f):
             #pdb.set_trace()
             diffCenterAddedList = getDifferenceFromCenter(nsedAddedList)
 
+            #originNormalizedList = getDifferenceFromOrigin(diffCenterAddedList)
+            
             finalFeatureList = diffCenterAddedList
             pointList = []
             for feature in finalFeatureList:
@@ -176,6 +178,22 @@ def getDifferenceFromCenter(stroke):
         point.append(point[0] - middlePoint[0])
         point.append(point[1] - middlePoint[1])
     return stroke
+
+def getDifferenceFromOrigin(stroke):
+    origin = [0.0, 0.0]
+    distanceList = []
+    solutionStroke = []
+    for point in stroke:
+        tempPoint = [point[0], point[1]]
+        distance = nl.eucledianDist(origin, tempPoint)
+        distanceList.append(distance)
+    count = len(distanceList)
+    for i in range(count):
+        elementIndex = distanceList.index(min(distanceList))
+        temp = distanceList.pop(elementIndex)
+        element = stroke.pop(elementIndex)
+        solutionStroke.append(element)
+    return solutionStroke
 
 def fileCall():
     global featureData, labelData
