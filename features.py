@@ -73,7 +73,8 @@ def featureExtraction(csv_file, symbolList, labelList):
             featureList = createAllFeatures(pointList)
             featureData.append(featureList)
             #pdb.set_trace()
-            labelData.append(labelList[i])
+            if len(labelList) != 0:
+                labelData.append(labelList[i])
             #print ('Data Index : ', dataIndex)
             dataIndex += 1
     #pdb.set_trace()
@@ -95,6 +96,20 @@ def getStrokeIds(fileName):
     symbolList, labelList = [], []
     for tGroup in itemlist:
         labelList.append(tGroup.getElementsByTagName('annotation')[0].firstChild.nodeValue)
+        
+        strokes = tGroup.getElementsByTagName('traceView')
+        strokeList = []
+        for stroke in strokes:
+            strokeList.append(stroke.attributes["traceDataRef"].nodeValue)
+        symbolList.append(strokeList)
+    return symbolList, labelList
+
+def getStrokeIdsForTest(fileName):
+    xmldoc = minidom.parse(fileName)
+    itemlist = xmldoc.getElementsByTagName('traceGroup')[0].getElementsByTagName('traceGroup')
+    symbolList, labelList = [], []
+    for tGroup in itemlist:
+        #labelList.append(tGroup.getElementsByTagName('annotation')[0].firstChild.nodeValue)
         
         strokes = tGroup.getElementsByTagName('traceView')
         strokeList = []

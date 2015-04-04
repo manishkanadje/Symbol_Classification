@@ -11,7 +11,7 @@ RESAMPLE_POINTS = 30
 # Reads the csv file and creates a dictionary of coordinates belonging to each
 # stroke
 def readFile(fileName):
-    inputFile = open(fileName, 'rU', newline = '\n')
+    inputFile = open(fileName, 'rU')#, newline = '\n')
     csvReader = csv.reader(inputFile, delimiter = ',')
     coordinates = {}
     for line in csvReader:

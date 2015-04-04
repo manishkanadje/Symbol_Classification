@@ -22,10 +22,10 @@ def readAllInputData():
     trainingFolderPath = "./TrainINKML_v3/"
     trainingPaths = [trainingFolderPath + f + "/" for f in os.listdir(trainingFolderPath) if os.path.isdir(trainingFolderPath + f)]
     # For a specific folder
-    # trainingPaths = [trainingFolderPath + "MfrDB/"]
+    # trainingPaths = [trainingFolderPath + "extension/"]
     
-    #for i in range(len(trainingPaths)):
-    for i in range(6):
+    for i in range(len(trainingPaths)):
+    #for i in range(6):
         path = trainingPaths[i]
         files = [path + f for f in os.listdir(path) if os.path.isfile(path + f) and f.endswith(".inkml")]
         # for a specific file in that folder
