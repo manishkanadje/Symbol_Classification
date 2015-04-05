@@ -177,7 +177,7 @@ def evaluateFile(rndClassifier, inkml_file, folderName):
     relations = ""
     inkml_parsed = minidom.parse(inkml_file)
     for i in range(len(results)):
-        print (inkml_file)
+        #print (inkml_file)
         #if (inkml_file == './TrainINKML_v3/HAMEX/formulaire003-equation038.inkml'):
         #    pdb.set_trace()
         try:
@@ -212,6 +212,7 @@ def findSymbol(inkml_parsed, strokeList):
     symbolList, labelList = [], []
     #pdb.set_trace()
     for tGroup in traceGroups:
+        stroke_id = None
         stroke_found = True 
         strokes = tGroup.getElementsByTagName('traceView')
         for stroke in strokes:
@@ -220,8 +221,11 @@ def findSymbol(inkml_parsed, strokeList):
                 stroke_found = False
                 break
         if stroke_found:
-            annotationXML = tGroup.getElementsByTagName('annotationXML')
-            symbol = annotationXML[0].attributes["href"].nodeValue
+            try:
+                annotationXML = tGroup.getElementsByTagName('annotationXML')
+                symbol = annotationXML[0].attributes["href"].nodeValue
+            except:
+                symbol = 'AUTO_' + stroke_id
             return symbol.replace(',', 'COMMA')
         
     return None

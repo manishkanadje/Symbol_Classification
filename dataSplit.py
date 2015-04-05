@@ -24,7 +24,7 @@ def readAllInputData():
     # For a specific folder
     #trainingPaths = [trainingFolderPath + "extension/"]
     #trainingPaths = [trainingFolderPath + "MfrDB/"]
-    trainingPaths = [trainingFolderPath + "HAMEX/"]
+    #trainingPaths = [trainingFolderPath + "HAMEX/"]
     #trainingPaths = [trainingFolderPath + "KAIST/"]
     
     for i in range(len(trainingPaths)):
@@ -33,6 +33,7 @@ def readAllInputData():
         files = [path + f for f in os.listdir(path) if os.path.isfile(path + f) and f.endswith(".inkml")]
         # for a specific file in that folder
         # files = [path + 'MfrDB0033.inkml']
+        # files = files[0:999]
         for inkml_file in files:
             print('Start processing :', inkml_file)
                 

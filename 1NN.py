@@ -85,11 +85,16 @@ def getTrainingData(UseTrained):
 
 def statsForData():
     nnClassifier, trainData, testData, trainLabels, testLabels = \
-       getTrainingData(True)
+       getTrainingData(False)
     #pdb.set_trace()
     print ("###############################")
     print ("Create lg files for training fold")
-    performClassification(trainData, nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/')
+    # performClassification(trainData, nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/')
+    t1 = threading.Thread(target=performClassification, args = (list(trainData.keys())[0:len(list(trainData.keys()))/2], nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/'))
+    t1.start()
+    t2 = threading.Thread(target=performClassification, args = (list(trainData.keys())[len(list(trainData.keys()))/2:], nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/'))
+    t2.start()
+    
     print ("###############################")
     #pdb.set_trace()
     print ("###############################")
@@ -104,9 +109,7 @@ def performClassification(dataset, classifier, trainLabels, folderNameTrue, fold
         path = path[:path.rfind('/') + 1]
         #lg_file = path + 'lg/' + basename + '.lg'        
         inkml_file = path + basename + '.inkml'
-        t = threading.Thread(target=evaluateFile, args = (classifier, trainLabels, inkml_file, folderNameOut))
-        t.start()
-        #evaluateFile(classifier, trainLabels, inkml_file, folderNameOut)
+        evaluateFile(classifier, trainLabels, inkml_file, folderNameOut)
         parser.convertInkmlToLg(inkml_file, folderNameTrue)
 
 def getFileStrokeData(csv_file):
@@ -203,6 +206,7 @@ def evaluateFile(rndClassifier, trainLabels, inkml_file, folderName):
     #lg_file = path + 'output_lg/' + basename + '.lg'
     lg_file = folderName + basename + '.lg'
     csv_file = path + 'csv/' + basename + '.csv'
+    print ("Evaluating " + inkml_file)
 
     if not os.path.exists(folderName):
         os.makedirs(folderName)

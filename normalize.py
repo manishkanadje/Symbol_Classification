@@ -5,6 +5,7 @@ from scipy import misc
 import pdb
 from PIL import Image
 import random
+import math
 
 RESAMPLE_POINTS = 30
 
