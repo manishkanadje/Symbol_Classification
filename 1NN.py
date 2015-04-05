@@ -108,13 +108,13 @@ def statsForData():
     print ("###############################")
     
 def statsForDataRemaining():
-    pdb.set_trace()
+    
     nnClassifier, trainData, testData, trainLabels, testLabels = getTrainingData(False)
     #pdb.set_trace()
     print ("###############################")
     print ("Create lg files for training fold")
     # performClassification(trainData, nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/')
-    numberOfSplits = 2
+    numberOfSplits = 10
     oldTrainDataList = list(trainData.keys())
     #oldTestDataList = list(testData.keys())
     done = [f[:f.rfind('.')] for f in os.listdir('./train_out_lg_NN/') if os.path.isfile('./train_out_lg_NN/' + f) and f.endswith(".lg")]

@@ -32,8 +32,8 @@ def getAllFiles():
             
             if not os.path.exists(csv_file):
                 parser.convertStrokesToCsv(inkml_file)
-            if not os.path.exists(lg_file):
-                parser.convertInkmlToLg(inkml_file)
+            #if not os.path.exists(lg_file):
+                #parser.convertInkmlToLg(inkml_file)
             
             trainData[csv_file] = 0
     return trainData
@@ -60,7 +60,7 @@ def getAllTrainingData():
 
     joblib.dump(rndClassifier, 'all_rndClf.joblib', compress = 3)
 
-    joblib.dump(trainData, 'trainData.joblib', compress = 3)
+    #joblib.dump(trainData, 'trainData.joblib', compress = 3)
     joblib.dump(trainingFeatures, 'trainingFeatures.joblib', compress = 3)
     joblib.dump(trainingLabels, 'trainingLabels.joblib', compress = 3)
 
