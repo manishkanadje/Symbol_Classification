@@ -58,7 +58,7 @@ def getAllTrainingData():
     print ("Training completed")
     print ("###############################")
 
-    joblib.dump(rndClassifier, 'rndClf.joblib', compress = 3)
+    joblib.dump(rndClassifier, 'all_rndClf.joblib', compress = 3)
 
     joblib.dump(trainData, 'trainData.joblib', compress = 3)
     joblib.dump(trainingFeatures, 'trainingFeatures.joblib', compress = 3)
