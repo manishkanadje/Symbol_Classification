@@ -2,13 +2,17 @@ import numpy
 #from pylab import *
 from sklearn import svm
 from sklearn import ensemble
+from xml.dom import minidom
 import pdb
 from sklearn.externals import joblib
 from random import *
+import os
+import threading
 
 import normalize as nl
 import features as feat
 import dataSplit as dsp
+import parser
 
 def getTrainingData(UseTrained):
     if UseTrained:
@@ -21,7 +25,6 @@ def getTrainingData(UseTrained):
         
         print ("Number of training files = " + str(len(trainData)))
         for file in trainData:
-        
             print ("Extracting features for " + file)
             symbolList, labelList = getFileStrokeData(file)
             tempTrainData, tempTrainLabels = feat.featureExtraction(file, symbolList, \
@@ -41,7 +44,7 @@ def getTrainingData(UseTrained):
 
         print ("###############################")
         print ("Training 1-Nearest Neighbor Classifier")
-        nnClassifier = createClassifier(trainingFeatures, trainingLabels)
+        nnClassifier, trainingLabels = createClassifier(trainingFeatures, trainingLabels)
         
         print ("###############################")
         #pdb.set_trace()
@@ -66,17 +69,17 @@ def getTrainingData(UseTrained):
         testFeatures = joblib.load('testFeatures.joblib')
         testLabels = joblib.load('testLabels.joblib')
         print ("###############################")
-    error = 0
-    print ("Total test samples = " + str(len(testFeatures)))
-    for i in range(len(trainingFeatures)):
-        _class = predict(trainingFeatures, trainingLabels, testFeatures[i])
-        if i % 100 == 0:
-            print(str(i) + ": " + _class + " should be " + str(testLabels[i]))
-        if _class != testLabels[i]:
-            error += 1
-    print ("Num of samples = " + str(len(testFeatures)))
-    print ("Errors = " + str(error))
-    print ("Rate = " + str((1.0 * error)/len(testFeatures)))
+    #error = 0
+    #print ("Total test samples = " + str(len(testFeatures)))
+    #for i in range(len(trainingFeatures)):
+    #    _class = predict(trainingFeatures, trainingLabels, testFeatures[i])
+    #    if i % 100 == 0:
+    #        print(str(i) + ": " + _class + " should be " + str(testLabels[i]))
+    #    if _class != testLabels[i]:
+    #        error += 1
+    #print ("Num of samples = " + str(len(testFeatures)))
+    #print ("Errors = " + str(error))
+    #print ("Rate = " + str((1.0 * error)/len(testFeatures)))
         
     return nnClassifier, trainData, testData, trainingLabels, testLabels
 
@@ -86,22 +89,24 @@ def statsForData():
     #pdb.set_trace()
     print ("###############################")
     print ("Create lg files for training fold")
-    performClassification(trainData, nnClassifier, './train_true_lg_NN/', './train_out_lg_NN/')
+    performClassification(trainData, nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/')
     print ("###############################")
     #pdb.set_trace()
     print ("###############################")
     print ("Create lg files for test fold")
-    performClassification(testData, nnClassifier, './test_true_lg_NN/', './test_out_lg_NN/')
+    performClassification(testData, nnClassifier, trainLabels, './test_true_lg_NN/', './test_out_lg_NN/')
     print ("###############################")
 
-def performClassification(dataset, classifier, folderNameTrue, folderNameOut):
+def performClassification(dataset, classifier, trainLabels, folderNameTrue, folderNameOut):
     for csv_file in dataset:
         basename = csv_file[csv_file.rfind('/') + 1:csv_file.rfind('.')]
         path = csv_file[:csv_file.rfind('/')]
         path = path[:path.rfind('/') + 1]
         #lg_file = path + 'lg/' + basename + '.lg'        
         inkml_file = path + basename + '.inkml'
-        evaluateFile(classifier, inkml_file, folderNameOut)
+        t = threading.Thread(target=evaluateFile, args = (classifier, trainLabels, inkml_file, folderNameOut))
+        t.start()
+        #evaluateFile(classifier, trainLabels, inkml_file, folderNameOut)
         parser.convertInkmlToLg(inkml_file, folderNameTrue)
 
 def getFileStrokeData(csv_file):
@@ -189,10 +194,10 @@ def evaluateData(rndClassifier, testFolderPath, folderName):
 
     for inkml_file in files:
         print('Start evaluating :', inkml_file)
-        evaluateFile(rndClassifier, inkml_file, folderName)
+        evaluateFile(rndClassifier, trainLabels, inkml_file, folderName)
     
         
-def evaluateFile(rndClassifier, inkml_file, folderName):
+def evaluateFile(rndClassifier, trainLabels, inkml_file, folderName):
     basename = inkml_file[inkml_file.rfind('/') + 1 : inkml_file.rfind('.')]
     path = inkml_file[:inkml_file.rfind('/') + 1]
     #lg_file = path + 'output_lg/' + basename + '.lg'
@@ -208,13 +213,14 @@ def evaluateFile(rndClassifier, inkml_file, folderName):
     symbolList, labelList = feat.getStrokeIdsForTest(inkml_file)
 
     testFeatures, testLabels = feat.featureExtraction(csv_file, symbolList, labelList)
-    results = rndClassifier.predict(testFeatures)
+    results = []
 
     lg = open(lg_file,'w')
 
     relations = ""
     inkml_parsed = minidom.parse(inkml_file)
-    for i in range(len(results)):
+    for i in range(len(testFeatures)):
+        result = predict(rndClassifier, trainLabels, testFeatures[i])
         #print (inkml_file)
         #if (inkml_file == './TrainINKML_v3/HAMEX/formulaire003-equation038.inkml'):
         #    pdb.set_trace()
@@ -225,12 +231,12 @@ def evaluateFile(rndClassifier, inkml_file, folderName):
             pdb.set_trace()
         if symbol_label == ',':
             symbol_label = 'COMMA'
-        result_symbol = 'COMMA' if results[i] == ',' else results[i]
+        result_symbol = 'COMMA' if result == ',' else result
         lg.write("O, " + symbol_label + ", " + result_symbol + ", 1.0")
         for stroke in symbolList[i]:
             lg.write(", " + stroke)
         lg.write("\n")
-        if i != len(results) - 1:
+        if i != len(testFeatures) - 1:
             try:
                 next_symbol_label = findSymbol(inkml_parsed, symbolList[i + 1])
             except:
