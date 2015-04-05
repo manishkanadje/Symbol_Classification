@@ -9,6 +9,7 @@ import parser
 #featureData = []
 #labelData = []
 dataIndex = 0
+FEATURE_NUMBER = 7
 
 def featureExtraction(csv_file, symbolList, labelList):
     #global featureData, labelData, dataIndex
@@ -63,9 +64,9 @@ def featureExtraction(csv_file, symbolList, labelList):
             #pdb.set_trace()
             diffCenterAddedList = getDifferenceFromCenter(nsedAddedList)
 
-            originNormalizedList = getDifferenceFromOrigin(diffCenterAddedList)
+            #originNormalizedList = getDifferenceFromOrigin(diffCenterAddedList)
             
-            finalFeatureList = originNormalizedList
+            finalFeatureList = diffCenterAddedList
             pointList = []
             for feature in finalFeatureList:
                 pointList += feature
@@ -77,6 +78,12 @@ def featureExtraction(csv_file, symbolList, labelList):
                 labelData.append(labelList[i])
             #print ('Data Index : ', dataIndex)
             dataIndex += 1
+        else:
+            global FEATURE_NUMBER
+            featureList = [0.0 for j in range(nl.RESAMPLE_POINTS * FEATURE_NUMBER)]
+            featureData.append(featureList)
+            labelData.append(labelList[i])
+        
     #pdb.set_trace()
     return featureData, labelData
     
