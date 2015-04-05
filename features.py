@@ -34,6 +34,8 @@ def featureExtraction(csv_file, symbolList, labelList):
     for key in coordinates:
         coordinates[key] = nl.duplicatePointRemoval(coordinates[key])
 
+    #if (len(labelList) < len(symbolList)):
+    #    pdb.set_trace()
     for i in range(len(symbolList)):
         symbol = symbolList[i]
         #print (lg_file)
@@ -78,11 +80,16 @@ def featureExtraction(csv_file, symbolList, labelList):
                 labelData.append(labelList[i])
             #print ('Data Index : ', dataIndex)
             dataIndex += 1
+        # Debug
         else:
             global FEATURE_NUMBER
+            #print (csv_file)
+            #if (csv_file == './TrainINKML_v3/MfrDB/csv/MfrDB2020.csv'):
+            #    pdb.set_trace()
             featureList = [0.0 for j in range(nl.RESAMPLE_POINTS * FEATURE_NUMBER)]
             featureData.append(featureList)
-            labelData.append(labelList[i])
+            if (len(labelList) != 0):
+                labelData.append(labelList[i])
         
     #pdb.set_trace()
     return featureData, labelData

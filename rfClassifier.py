@@ -15,52 +15,87 @@ import normalize as nl
 import features as feat
 import dataSplit as dsp
 
-def getTrainingData():
-    trainData, testData = dsp.updateSplits()
-    trainingFeatures = []
-    trainingLabels = []
+def getTrainingData(trainFlag):
+    if (trainFlag):
+        trainData, testData = dsp.updateSplits()
+        trainingFeatures = []
+        trainingLabels = []
 
-    testFeatures = []
-    testLabels = []
-    #featureList, labelList = feat.fileCall()
-    #pdb.set_trace()
-    #svmClassifier = svm.SVC()
-    for file in trainData:
+        testFeatures = []
+        testLabels = []
+        #featureList, labelList = feat.fileCall()
         #pdb.set_trace()
-        #trainingFeatures, trainingLabels = feat.featureExtraction(file)
-        symbolList, labelList = getFileStrokeData(file)
-        tempTrainData, tempTrainLabels = feat.featureExtraction(file, symbolList, \
-                                                                labelList)
-        trainingFeatures += tempTrainData
-        trainingLabels += tempTrainLabels
+        #svmClassifier = svm.SVC()
+        for file in trainData:
+            #pdb.set_trace()
+            #trainingFeatures, trainingLabels = feat.featureExtraction(file)
+            symbolList, labelList = getFileStrokeData(file)
+            tempTrainData, tempTrainLabels = feat.featureExtraction(file, \
+                                                    symbolList,labelList)
+            trainingFeatures += tempTrainData
+            trainingLabels += tempTrainLabels
 
-    for file in testData:
-        #testFeatures, testLabels = feat.featureExtraction(file)
-        symbolList, labelList = getFileStrokeData(file)
-        tempTestData, tempTestLabels = feat.featureExtraction(file, symbolList, \
+        for file in testData:
+            #testFeatures, testLabels = feat.featureExtraction(file)
+            symbolList, labelList = getFileStrokeData(file)
+            tempTestData, tempTestLabels = feat.featureExtraction(file, symbolList, \
                                                               labelList)
-        testFeatures += tempTestData
-        testLabels += tempTestLabels
-    #pdb.set_trace()
-    rndClassifier = ensemble.RandomForestClassifier(n_estimators = 500, max_depth = 15)
-    
+            testFeatures += tempTestData
+            testLabels += tempTestLabels
+        #pdb.set_trace()
+        rndClassifier = ensemble.RandomForestClassifier(n_estimators = 10, max_depth = 1)
+
+        print ("###############################")
+        print ("Training Random Forest Classifier")
+        rndClassifier.fit(trainingFeatures, trainingLabels)
+        print ("Training completed")
+        print ("###############################")
+        #pdb.set_trace()
+        joblib.dump(rndClassifier, 'rndClf.joblib', compress = 3)
+
+        joblib.dump(trainData, 'trainData.joblib', compress = 3)
+        joblib.dump(trainingFeatures, 'trainingFeatures.joblib', compress = 3)
+        joblib.dump(trainingLabels, 'trainingLabels.joblib', compress = 3)
+
+        joblib.dump(testData, 'testData.joblib', compress = 3)
+        joblib.dump(testFeatures, 'testFeatures.joblib', compress = 3)
+        joblib.dump(testLabels, 'testLabels.joblib', compress = 3)
+    else:
+        print ("###############################")
+        print ("Loading Pickle Files")
+        rndClassifier = joblib.load('rndClf.joblib')
+        trainData = joblib.load('trainData.joblib')
+        trainingFeatures = joblib.load('trainingFeatures.joblib')
+        trainingLabels = joblib.load('trainingLabels.joblib')
+
+        testData = joblib.load('testData.joblib')
+        testFeatures = joblib.load('testFeatures.joblib')
+        testLabels = joblib.load('testLabels.joblib')
+        print ("###############################")
     #print (len(featureList))
     #trainData, trainLabels, testData, testLabels = splitData(featureList, labelList)
     #svmClassifier.fit(trainData, trainLabels)
     #print len(trainData)
     #print len(testData)
     print ("###############################")
-    print ("Training Random Forest Classifier")
-    rndClassifier.fit(trainingFeatures, trainingLabels)
-    print ("Training completed")
+    print ("Classification rate for train data on symbol basis:")
+    results = rndClassifier.predict(trainingFeatures)
+    count  = 0
+    for i in range(len(results)):
+        if (results[i] == trainingLabels[i]):
+            count += 1
+    print (count/len(trainingLabels))
     print ("###############################")
-    #results = svmClassifier.predict(testData)
-    #results = rndClassifier.predict(testFeatures)
-    #count  = 0
-    #for i in range(len(results)):
-    #    if (results[i] == testLabels[i]):
-    #        count += 1
-    #print (count/len(testLabels))
+    
+    print ("###############################")
+    print ("Classification rate for test data on symbol basis:")
+    results = rndClassifier.predict(testFeatures)
+    count  = 0
+    for i in range(len(results)):
+        if (results[i] == testLabels[i]):
+            count += 1
+    print (count/len(testLabels))
+    print ("###############################")
     #pdb.set_trace()
     #print ("Done Training")
     return rndClassifier, trainData, testData, trainingLabels, testLabels
@@ -76,10 +111,18 @@ def performClassification(dataset, classifier, folderNameTrue, folderNameOut):
         parser.convertInkmlToLg(inkml_file, folderNameTrue)
         
 def statsForData():
-    rndClassifier, trainData, testData, trainLabels, testLabels = getTrainingData()
-    performClassification(trainData, rndClassifier, './train_true_lg/', './train_out_lg/')
+    rndClassifier, trainData, testData, trainLabels, testLabels = \
+       getTrainingData(True)
     #pdb.set_trace()
+    print ("###############################")
+    print ("Create lg files for training fold")
+    performClassification(trainData, rndClassifier, './train_true_lg/', './train_out_lg/')
+    print ("###############################")
+    #pdb.set_trace()
+    print ("###############################")
+    print ("Create lg files for test fold")
     performClassification(testData, rndClassifier, './test_true_lg/', './test_out_lg/')
+    print ("###############################")
 
 def getFileStrokeData(csv_file):
     basename = csv_file[csv_file.rfind('/') + 1:csv_file.rfind('.')]
@@ -134,7 +177,14 @@ def evaluateFile(rndClassifier, inkml_file, folderName):
     relations = ""
     inkml_parsed = minidom.parse(inkml_file)
     for i in range(len(results)):
-        symbol_label = findSymbol(inkml_parsed, symbolList[i])
+        print (inkml_file)
+        #if (inkml_file == './TrainINKML_v3/HAMEX/formulaire003-equation038.inkml'):
+        #    pdb.set_trace()
+        try:
+            symbol_label = findSymbol(inkml_parsed, symbolList[i])
+        except:
+            pickle.dump(inkml_parsed, open('inkmlp.p', 'wb'))
+            pdb.set_trace()
         if symbol_label == ',':
             symbol_label = 'COMMA'
         result_symbol = 'COMMA' if results[i] == ',' else results[i]
@@ -143,7 +193,11 @@ def evaluateFile(rndClassifier, inkml_file, folderName):
             lg.write(", " + stroke)
         lg.write("\n")
         if i != len(results) - 1:
-            next_symbol_label = findSymbol(inkml_parsed, symbolList[i + 1])
+            try:
+                next_symbol_label = findSymbol(inkml_parsed, symbolList[i + 1])
+            except:
+                pickle.dump(inkml_parsed, open('inkmlp.p', 'wb'))
+                pdb.set_trace()
             if next_symbol_label == ',':
                 next_symbol_label = 'COMMA'
             relations += "R, " + symbol_label + ", " + next_symbol_label + ", Right, 1.0\n"
@@ -156,7 +210,7 @@ def evaluateFile(rndClassifier, inkml_file, folderName):
 def findSymbol(inkml_parsed, strokeList):
     traceGroups = inkml_parsed.getElementsByTagName('traceGroup')[0].getElementsByTagName('traceGroup')
     symbolList, labelList = [], []
-    
+    #pdb.set_trace()
     for tGroup in traceGroups:
         stroke_found = True 
         strokes = tGroup.getElementsByTagName('traceView')

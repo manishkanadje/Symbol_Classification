@@ -23,6 +23,9 @@ def readAllInputData():
     trainingPaths = [trainingFolderPath + f + "/" for f in os.listdir(trainingFolderPath) if os.path.isdir(trainingFolderPath + f)]
     # For a specific folder
     #trainingPaths = [trainingFolderPath + "extension/"]
+    #trainingPaths = [trainingFolderPath + "MfrDB/"]
+    trainingPaths = [trainingFolderPath + "HAMEX/"]
+    #trainingPaths = [trainingFolderPath + "KAIST/"]
     
     for i in range(len(trainingPaths)):
     #for i in range(6):
