@@ -94,18 +94,50 @@ def statsForData():
     numberOfSplits = 10
     trainDataList = list(trainData.keys())
     length = int(len(trainDataList) / numberOfSplits);
-    splits = [i for i in range(numberOfSplits)]
-    for i in range(numberOfSplits - 1):
-        t = threading.Thread(target=performClassification, args = (trainDataList[splits[i] * length:splits[i + 1] * length], nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/'))
+    for i in range(numberOfSplits):
+        t = threading.Thread(target=performClassification, args = (trainDataList[i * length:(i + 1) * length], nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/'))
         t.start()
-    #t2 = threading.Thread(target=performClassification, args = (list(trainData.keys())[int(len(list(trainData.keys()))/2):], nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/'))
-    #t2.start()
+    t = threading.Thread(target=performClassification, args = (trainDataList[numberOfSplits * length:], nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/'))
+    t.start()
     
     print ("###############################")
     #pdb.set_trace()
     print ("###############################")
     print ("Create lg files for test fold")
     performClassification(testData, nnClassifier, trainLabels, './test_true_lg_NN/', './test_out_lg_NN/')
+    print ("###############################")
+    
+def statsForDataRemaining():
+    pdb.set_trace()
+    nnClassifier, trainData, testData, trainLabels, testLabels = getTrainingData(False)
+    #pdb.set_trace()
+    print ("###############################")
+    print ("Create lg files for training fold")
+    # performClassification(trainData, nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/')
+    numberOfSplits = 2
+    oldTrainDataList = list(trainData.keys())
+    #oldTestDataList = list(testData.keys())
+    done = [f[:f.rfind('.')] for f in os.listdir('./train_out_lg_NN/') if os.path.isfile('./train_out_lg_NN/' + f) and f.endswith(".lg")]
+    trainDataList = [f for f in oldTrainDataList if f[f.rfind('/') + 1:f.rfind('.')] not in done]
+    #testDataList = [f for f in oldTestDataList if f[f.rfind('/') + 1:f.rfind('.')] not in done]
+    #trainDataList += testDataList
+    print(str(trainDataList))
+    length = int(len(trainDataList) / numberOfSplits);
+    print("Length " + str(length))
+    for i in range(numberOfSplits):
+        print("From " + str(i * length) + " to " + str((i + 1) * length))
+        t = threading.Thread(target=performClassification, args = (trainDataList[i * length:(i + 1) * length], nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/'))
+        t.start()
+        
+    print("From " + str(numberOfSplits * length) + " to end")
+    t = threading.Thread(target=performClassification, args = (trainDataList[numberOfSplits * length:], nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/'))
+    t.start()
+    
+    print ("###############################")
+    #pdb.set_trace()
+    print ("###############################")
+    print ("Create lg files for test fold")
+    #performClassification(testData, nnClassifier, trainLabels, './test_true_lg_NN/', './test_out_lg_NN/')
     print ("###############################")
 
 def performClassification(dataset, classifier, trainLabels, folderNameTrue, folderNameOut):
@@ -284,5 +316,6 @@ def findSymbol(inkml_parsed, strokeList):
         
     return None
 
-statsForData()
+#statsForData()
+statsForDataRemaining()
 
