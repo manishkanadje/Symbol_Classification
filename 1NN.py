@@ -1,5 +1,5 @@
 import numpy
-#from pylab import *
+from pylab import *
 from sklearn import svm
 from sklearn import ensemble
 from xml.dom import minidom
@@ -275,3 +275,4 @@ def findSymbol(inkml_parsed, strokeList):
     return None
 
 statsForData()
+
