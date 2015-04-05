@@ -3,76 +3,142 @@ import numpy
 from sklearn import svm
 from sklearn import ensemble
 import pdb
+from sklearn.externals import joblib
 from random import *
 
 import normalize as nl
 import features as feat
 import dataSplit as dsp
 
-def getTrainingData():
-    trainData, testData = dsp.updateSplits()
-    trainingFeatures = []
-    trainingLabels = []
+def getTrainingData(UseTrained):
+    if UseTrained:
+        trainData, testData = dsp.updateSplits()
+        trainingFeatures = []
+        trainingLabels = []
 
-    testFeatures = []
-    testLabels = []
-    #featureList, labelList = feat.fileCall()
-    #pdb.set_trace()
-    #svmClassifier = svm.SVC()
-    for file in trainData:
+        testFeatures = []
+        testLabels = []
+        
+        print ("Number of training files = " + str(len(trainData)))
+        for file in trainData:
+        
+            print ("Extracting features for " + file)
+            symbolList, labelList = getFileStrokeData(file)
+            tempTrainData, tempTrainLabels = feat.featureExtraction(file, symbolList, \
+                                                                    labelList)
+            trainingFeatures += tempTrainData
+            trainingLabels += tempTrainLabels
+
+        print ("Number of test files = " + str(len(testData)))
+        for file in testData:
+            print ("Extracting features for " + file)
+            symbolList, labelList = getFileStrokeData(file)
+            tempTestData, tempTestLabels = feat.featureExtraction(file, symbolList, \
+                                                                  labelList)
+            testFeatures += tempTestData
+            testLabels += tempTestLabels
+        
+
+        print ("###############################")
+        print ("Training 1-Nearest Neighbor Classifier")
+        nnClassifier = createClassifier(trainingFeatures, trainingLabels)
+        
+        print ("###############################")
         #pdb.set_trace()
-        #trainingFeatures, trainingLabels = feat.featureExtraction(file)
-        tempTrainData, tempTrainLabels = feat.featureExtraction(file)
-        trainingFeatures += tempTrainData
-        trainingLabels += tempTrainLabels
+        joblib.dump(nnClassifier, '1nnClf.joblib', compress = 3)
 
-    for file in testData:
-        #testFeatures, testLabels = feat.featureExtraction(file)
-        tempTestData, tempTestLabels = feat.featureExtraction(file)
-        testFeatures += tempTestData
-        testLabels += tempTestLabels
-    pdb.set_trace()
-    
-    #print (len(featureList))
-    for i in range(len(testFeatures)):
-        results = classify1NN(trainingFeatures, trainingLabels, testFeatures[i], testLabels[i])
-        count  = 0
-        for i in range(len(results)):
-            if (results[i] == testLabels[i]):
-                count += 1
-        print (count/len(testLabels))
-    pdb.set_trace()
-    print ("Done Training")
+        joblib.dump(trainData, 'trainData.joblib', compress = 3)
+        joblib.dump(trainingFeatures, 'trainingFeatures.joblib', compress = 3)
+        joblib.dump(trainingLabels, 'trainingLabels.joblib', compress = 3)
 
-def plotXY(X, Y):
-    errors = 0
-    c = [[0, 0], [0, 0]]
-    for i in range(len(X)):
-        output = classify1NN(X, Y, X[i][1], X[i][2])
-        if Y[i][0] == 0:
-            plt.plot(X[i][1], X[i][2], 'bs')
-            if output < 0.5:
-                c[0][0] += 1
-            else:
-                c[0][1] += 1
-        elif Y[i][0] == 1:
-            plt.plot(X[i][1], X[i][2], 'y*')
-            if output < 0.5:
-                c[1][0] += 1
-            else:
-                c[1][1] += 1
-        else:
-            print("ERROR: Unexpected target value!")
-    errors = c[0][1] + c[1][0]
-    total = len(X)
-    percent = (total - errors)/total * 100
-    print("Classification Rate = %.2f %%" % percent)
-    print("Confusion matrix:")
-    print("                 " + "  Alg. Output")
-    print("                 " + "    0     1")
-    print(" Ground Truth/ 0 " + "   " + str(c[0][0]) + "    " + str(c[0][1]))
-    print("    Target     1 " + "   " + str(c[1][0]) + "    " + str(c[1][1]))
+        joblib.dump(testData, 'testData.joblib', compress = 3)
+        joblib.dump(testFeatures, 'testFeatures.joblib', compress = 3)
+        joblib.dump(testLabels, 'testLabels.joblib', compress = 3)
+    else:
+        print ("###############################")
+        print ("Loading Pickle Files")
+        nnClassifier = joblib.load('1nnClf.joblib')
+        trainData = joblib.load('trainData.joblib')
+        trainingFeatures = joblib.load('trainingFeatures.joblib')
+        trainingLabels = joblib.load('trainingLabels.joblib')
+
+        testData = joblib.load('testData.joblib')
+        testFeatures = joblib.load('testFeatures.joblib')
+        testLabels = joblib.load('testLabels.joblib')
+        print ("###############################")
+    error = 0
+    print ("Total test samples = " + str(len(testFeatures)))
+    for i in range(len(trainingFeatures)):
+        _class = predict(trainingFeatures, trainingLabels, testFeatures[i])
+        if i % 100 == 0:
+            print(str(i) + ": " + _class + " should be " + str(testLabels[i]))
+        if _class != testLabels[i]:
+            error += 1
+    print ("Num of samples = " + str(len(testFeatures)))
+    print ("Errors = " + str(error))
+    print ("Rate = " + str((1.0 * error)/len(testFeatures)))
+        
+    return nnClassifier, trainData, testData, trainingLabels, testLabels
+
+def statsForData():
+    nnClassifier, trainData, testData, trainLabels, testLabels = \
+       getTrainingData(True)
+    #pdb.set_trace()
+    print ("###############################")
+    print ("Create lg files for training fold")
+    performClassification(trainData, nnClassifier, './train_true_lg_NN/', './train_out_lg_NN/')
+    print ("###############################")
+    #pdb.set_trace()
+    print ("###############################")
+    print ("Create lg files for test fold")
+    performClassification(testData, nnClassifier, './test_true_lg_NN/', './test_out_lg_NN/')
+    print ("###############################")
+
+def performClassification(dataset, classifier, folderNameTrue, folderNameOut):
+    for csv_file in dataset:
+        basename = csv_file[csv_file.rfind('/') + 1:csv_file.rfind('.')]
+        path = csv_file[:csv_file.rfind('/')]
+        path = path[:path.rfind('/') + 1]
+        #lg_file = path + 'lg/' + basename + '.lg'        
+        inkml_file = path + basename + '.inkml'
+        evaluateFile(classifier, inkml_file, folderNameOut)
+        parser.convertInkmlToLg(inkml_file, folderNameTrue)
+
+def getFileStrokeData(csv_file):
+    basename = csv_file[csv_file.rfind('/') + 1:csv_file.rfind('.')]
+    path = csv_file[:csv_file.rfind('/')]
+    path = path[:path.rfind('/') + 1]
+    #lg_file = path + 'lg/' + basename + '.lg'        
+    inkml_file = path + basename + '.inkml'        
+    #csv_file = path + 'csv/' + basename + '.csv'    
+    symbolList, labelList = feat.getStrokeIds(inkml_file)
+    return symbolList, labelList 
+
+def createClassifier(trainingFeatures, trainingLabels):
+    mat = numpy.matrix(trainingFeatures)
+    return mat, trainingLabels
+
+def predict(trainingFeatures, trainingLabels, featureVector):
+    #extendedFeatureMatrix = numpy.matrix([featureVector for i in range(len(trainingLabels))])
+    #diff = numpy.subtract(extendedFeatureMatrix, trainingFeatures)
+    #pdb.set_trace()
+    featureMatrix = numpy.matrix(featureVector)
+    diff = numpy.subtract(trainingFeatures, featureMatrix)
+    squaredDiff = numpy.multiply(diff, diff)
+    distance = numpy.sum(squaredDiff, axis=1)
+    _class = numpy.argmin(distance)
+    return trainingLabels[_class]
     
+def predictOld(trainingFeatures, trainingLabels, featureVector):
+    #extendedFeatureMatrix = numpy.matrix([featureVector for i in range(len(trainingLabels))])
+    #diff = numpy.subtract(extendedFeatureMatrix, trainingFeatures)
+    
+    featureMatrix = numpy.matrix(featureVector)
+    diff = numpy.subtract(trainingFeatures, featureMatrix)
+    squaredDiff = numpy.multiply(diff, diff)
+    distance = numpy.sum(squaredDiff, axis=1)
+    _class = numpy.argmin(distance)
+    return trainingLabels[_class]
 
 def classify1NN(X, Y, f):
     # Find class of nearest neighbor
@@ -82,7 +148,7 @@ def classify1NN(X, Y, f):
         dist = 0
         for n in range(len(X[i])):
             xn = X[i][n]
-            dist += (x1 - f[n]) ** 2
+            dist += (xn - f[n]) ** 2
         if dist < least:
             least = dist
             leastClass = Y[i]
@@ -117,4 +183,89 @@ def classifyAllNN(X, Y, classifier):
             lastoutput = output
     plt.plot(dbX, dbY, 'k.')
 
-getTrainingData()
+def evaluateData(rndClassifier, testFolderPath, folderName):
+    # testFolderPath = "./TrainINKML_v3/"
+    files = [testFolderPath + f for f in os.listdir(testFolderPath) if os.path.isfile(testFolderPath + f) and f.endswith(".inkml")]
+
+    for inkml_file in files:
+        print('Start evaluating :', inkml_file)
+        evaluateFile(rndClassifier, inkml_file, folderName)
+    
+        
+def evaluateFile(rndClassifier, inkml_file, folderName):
+    basename = inkml_file[inkml_file.rfind('/') + 1 : inkml_file.rfind('.')]
+    path = inkml_file[:inkml_file.rfind('/') + 1]
+    #lg_file = path + 'output_lg/' + basename + '.lg'
+    lg_file = folderName + basename + '.lg'
+    csv_file = path + 'csv/' + basename + '.csv'
+
+    if not os.path.exists(folderName):
+        os.makedirs(folderName)
+    
+    if not os.path.exists(csv_file):
+        parser.convertStrokesToCsv(inkml_file)
+    
+    symbolList, labelList = feat.getStrokeIdsForTest(inkml_file)
+
+    testFeatures, testLabels = feat.featureExtraction(csv_file, symbolList, labelList)
+    results = rndClassifier.predict(testFeatures)
+
+    lg = open(lg_file,'w')
+
+    relations = ""
+    inkml_parsed = minidom.parse(inkml_file)
+    for i in range(len(results)):
+        #print (inkml_file)
+        #if (inkml_file == './TrainINKML_v3/HAMEX/formulaire003-equation038.inkml'):
+        #    pdb.set_trace()
+        try:
+            symbol_label = findSymbol(inkml_parsed, symbolList[i])
+        except:
+            pickle.dump(inkml_parsed, open('inkmlp.p', 'wb'))
+            pdb.set_trace()
+        if symbol_label == ',':
+            symbol_label = 'COMMA'
+        result_symbol = 'COMMA' if results[i] == ',' else results[i]
+        lg.write("O, " + symbol_label + ", " + result_symbol + ", 1.0")
+        for stroke in symbolList[i]:
+            lg.write(", " + stroke)
+        lg.write("\n")
+        if i != len(results) - 1:
+            try:
+                next_symbol_label = findSymbol(inkml_parsed, symbolList[i + 1])
+            except:
+                pickle.dump(inkml_parsed, open('inkmlp.p', 'wb'))
+                pdb.set_trace()
+            if next_symbol_label == ',':
+                next_symbol_label = 'COMMA'
+            relations += "R, " + symbol_label + ", " + next_symbol_label + ", Right, 1.0\n"
+    
+    lg.write("\n")
+    lg.write(relations)
+    
+    lg.close()
+
+def findSymbol(inkml_parsed, strokeList):
+    traceGroups = inkml_parsed.getElementsByTagName('traceGroup')[0].getElementsByTagName('traceGroup')
+    symbolList, labelList = [], []
+    #pdb.set_trace()
+    for tGroup in traceGroups:
+        stroke_id = None
+        stroke_found = True 
+        strokes = tGroup.getElementsByTagName('traceView')
+        for stroke in strokes:
+            stroke_id = stroke.attributes["traceDataRef"].nodeValue
+            if stroke_id not in strokeList:
+                stroke_found = False
+                break
+        if stroke_found:
+            try:
+                annotationXML = tGroup.getElementsByTagName('annotationXML')
+                symbol = annotationXML[0].attributes["href"].nodeValue
+            except:
+                symbol = 'AUTO_' + stroke_id
+            return symbol.replace(',', 'COMMA')
+        
+    return None
+
+statsForData()
