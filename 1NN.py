@@ -91,10 +91,15 @@ def statsForData():
     print ("###############################")
     print ("Create lg files for training fold")
     # performClassification(trainData, nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/')
-    t1 = threading.Thread(target=performClassification, args = (list(trainData.keys())[0:int(len(list(trainData.keys()))/2)], nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/'))
-    t1.start()
-    t2 = threading.Thread(target=performClassification, args = (list(trainData.keys())[int(len(list(trainData.keys()))/2):], nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/'))
-    t2.start()
+    numberOfSplits = 10
+    trainDataList = list(trainData.keys())
+    length = int(len(trainDataList) / numberOfSplits);
+    splits = [i for i in range(numberOfSplits)]
+    for i in range(numberOfSplits - 1):
+        t = threading.Thread(target=performClassification, args = (trainDataList[splits[i] * length:splits[i + 1] * length], nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/'))
+        t.start()
+    #t2 = threading.Thread(target=performClassification, args = (list(trainData.keys())[int(len(list(trainData.keys()))/2):], nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/'))
+    #t2.start()
     
     print ("###############################")
     #pdb.set_trace()

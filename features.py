@@ -6,6 +6,7 @@ import fnmatch
 import os
 import parser
 import numpy
+import math
 
 #featureData = []
 #labelData = []
@@ -198,7 +199,7 @@ def calculateCurvatureAngle(prevPoint, point, nextPoint):
         value = -1
     angle = numpy.arccos(value)
     if (numpy.isnan(angle)):
-        angle = pi
+        angle = math.pi
     return angle
 
 def getDifferenceFromCenter(stroke):
