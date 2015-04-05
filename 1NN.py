@@ -60,7 +60,7 @@ def getTrainingData(UseTrained):
     else:
         print ("###############################")
         print ("Loading Pickle Files")
-        nnClassifier = joblib.load('1nnClf.joblib')
+        #nnClassifier = joblib.load('1nnClf.joblib')
         trainData = joblib.load('trainData.joblib')
         trainingFeatures = joblib.load('trainingFeatures.joblib')
         trainingLabels = joblib.load('trainingLabels.joblib')
@@ -68,6 +68,7 @@ def getTrainingData(UseTrained):
         testData = joblib.load('testData.joblib')
         testFeatures = joblib.load('testFeatures.joblib')
         testLabels = joblib.load('testLabels.joblib')
+        nnClassifier, trainingLabels = createClassifier(trainingFeatures, trainingLabels)
         print ("###############################")
     #error = 0
     #print ("Total test samples = " + str(len(testFeatures)))
@@ -90,9 +91,9 @@ def statsForData():
     print ("###############################")
     print ("Create lg files for training fold")
     # performClassification(trainData, nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/')
-    t1 = threading.Thread(target=performClassification, args = (list(trainData.keys())[0:len(list(trainData.keys()))/2], nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/'))
+    t1 = threading.Thread(target=performClassification, args = (list(trainData.keys())[0:int(len(list(trainData.keys()))/2)], nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/'))
     t1.start()
-    t2 = threading.Thread(target=performClassification, args = (list(trainData.keys())[len(list(trainData.keys()))/2:], nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/'))
+    t2 = threading.Thread(target=performClassification, args = (list(trainData.keys())[int(len(list(trainData.keys()))/2):], nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/'))
     t2.start()
     
     print ("###############################")
