@@ -15,6 +15,55 @@ import normalize as nl
 import features as feat
 import dataSplit as dsp
 
+def getAllFiles():
+    trainData = {}
+    trainingFolderPath = "./TrainINKML_v3/"
+    trainingPaths = [trainingFolderPath + f + "/" for f in os.listdir(trainingFolderPath) if os.path.isdir(trainingFolderPath + f)]
+    
+    for i in range(len(trainingPaths)):
+        path = trainingPaths[i]
+        files = [path + f for f in os.listdir(path) if os.path.isfile(path + f) and f.endswith(".inkml")]
+        for inkml_file in files:
+            print('Start processing :', inkml_file)
+            basename = inkml_file[inkml_file.rfind('/') + 1:inkml_file.rfind('.')]
+            path = inkml_file[:inkml_file.rfind('/') + 1]
+            lg_file = path + 'lg/' + basename + '.lg'        
+            csv_file = path + 'csv/' + basename + '.csv'
+            
+            if not os.path.exists(csv_file):
+                parser.convertStrokesToCsv(inkml_file)
+            if not os.path.exists(lg_file):
+                parser.convertInkmlToLg(inkml_file)
+            
+            trainData[csv_file] = 0
+    return trainData
+
+def getAllTrainingData():
+    trainData = getAllFiles()
+    trainingFeatures = []
+    trainingLabels = []
+
+    for file in trainData:
+        symbolList, labelList = getFileStrokeData(file)
+        tempTrainData, tempTrainLabels = feat.featureExtraction(file, \
+                                                symbolList,labelList)
+        trainingFeatures += tempTrainData
+        trainingLabels += tempTrainLabels
+
+    rndClassifier = ensemble.RandomForestClassifier(n_estimators = 500, max_depth = 18)
+
+    print ("###############################")
+    print ("Training Random Forest Classifier")
+    rndClassifier.fit(trainingFeatures, trainingLabels)
+    print ("Training completed")
+    print ("###############################")
+
+    joblib.dump(rndClassifier, 'rndClf.joblib', compress = 3)
+
+    joblib.dump(trainData, 'trainData.joblib', compress = 3)
+    joblib.dump(trainingFeatures, 'trainingFeatures.joblib', compress = 3)
+    joblib.dump(trainingLabels, 'trainingLabels.joblib', compress = 3)
+
 def getTrainingData(trainFlag):
     if (trainFlag):
         trainData, testData = dsp.updateSplits()
@@ -43,7 +92,7 @@ def getTrainingData(trainFlag):
             testFeatures += tempTestData
             testLabels += tempTestLabels
         #pdb.set_trace()
-        rndClassifier = ensemble.RandomForestClassifier(n_estimators = 10, max_depth = 1)
+        rndClassifier = ensemble.RandomForestClassifier(n_estimators = 500, max_depth = 18)
 
         print ("###############################")
         print ("Training Random Forest Classifier")
@@ -84,7 +133,7 @@ def getTrainingData(trainFlag):
     for i in range(len(results)):
         if (results[i] == trainingLabels[i]):
             count += 1
-    print (count/len(trainingLabels))
+    print (count/float(len(trainingLabels)))
     print ("###############################")
     
     print ("###############################")
@@ -94,7 +143,7 @@ def getTrainingData(trainFlag):
     for i in range(len(results)):
         if (results[i] == testLabels[i]):
             count += 1
-    print (count/len(testLabels))
+    print (count/float(len(testLabels)))
     print ("###############################")
     #pdb.set_trace()
     #print ("Done Training")
@@ -234,4 +283,5 @@ def findSymbol(inkml_parsed, strokeList):
 
 #rndClassifier = getTrainingData()
 #evaluateData(rndClassifier, "./TrainINKML_v3/extension/", "./out_lg/")
-statsForData()
+#statsForData()
+getAllTrainingData()
