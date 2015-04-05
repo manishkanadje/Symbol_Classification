@@ -1,4 +1,4 @@
-from pylab import *
+#from pylab import *
 import csv
 import scipy.ndimage
 from scipy import misc

@@ -1,10 +1,11 @@
-from pylab import *
+#from pylab import *
 from xml.dom import minidom
 import normalize as nl
 import pdb
 import fnmatch
 import os
 import parser
+import numpy
 
 #featureData = []
 #labelData = []
@@ -184,19 +185,19 @@ def getCurvatureFeature(stroke):
 
 def calculateCurvatureAngle(prevPoint, point, nextPoint):
     #pdb.set_trace()
-    vector1 = array([point[0] - prevPoint[0], point[1] - prevPoint[1]])
-    vector2 = array([nextPoint[0] - point[0], nextPoint[1] - point[1]])
-    numerator = dot(vector1, vector2)
+    vector1 = numpy.array([point[0] - prevPoint[0], point[1] - prevPoint[1]])
+    vector2 = numpy.array([nextPoint[0] - point[0], nextPoint[1] - point[1]])
+    numerator = numpy.dot(vector1, vector2)
     #print (numerator)
-    denominator = sqrt(dot(vector1, vector1) * dot(vector2, vector2))
+    denominator = numpy.sqrt(numpy.dot(vector1, vector1) * numpy.dot(vector2, vector2))
     #print (denominator)
     value = numerator/denominator
     if value > 1:
         value = 1
     if value < -1:
         value = -1
-    angle = arccos(value)
-    if (isnan(angle)):
+    angle = numpy.arccos(value)
+    if (numpy.isnan(angle)):
         angle = pi
     return angle
 

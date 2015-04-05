@@ -1,78 +1,105 @@
 import numpy
-#from pylab import *
+from pylab import *
 from sklearn import svm
 from sklearn import ensemble
 import pdb
+from sklearn.externals import joblib
 from random import *
 
 import normalize as nl
 import features as feat
 import dataSplit as dsp
 
-def getTrainingData():
-    trainData, testData = dsp.updateSplits()
-    trainingFeatures = []
-    trainingLabels = []
+def getTrainingData(UseTrained):
+    if UseTrained:
+        trainData, testData = dsp.updateSplits()
+        trainingFeatures = []
+        trainingLabels = []
 
-    testFeatures = []
-    testLabels = []
-    #featureList, labelList = feat.fileCall()
-    #pdb.set_trace()
-    #svmClassifier = svm.SVC()
-    for file in trainData:
-        #pdb.set_trace()
-        #trainingFeatures, trainingLabels = feat.featureExtraction(file)
-        tempTrainData, tempTrainLabels = feat.featureExtraction(file)
-        trainingFeatures += tempTrainData
-        trainingLabels += tempTrainLabels
+        testFeatures = []
+        testLabels = []
+        
+        print ("Number of training files = " + str(len(trainData)))
+        for i in range(len(trainData)):
+        
+            print ("Extracting features for " + trainData[i])
+            symbolList, labelList = getFileStrokeData(trainData[i])
+            tempTrainData, tempTrainLabels = feat.featureExtraction(trainData[i], symbolList, \
+                                                                    labelList)
+            trainingFeatures += tempTrainData
+            trainingLabels += tempTrainLabels
 
-    for file in testData:
-        #testFeatures, testLabels = feat.featureExtraction(file)
-        tempTestData, tempTestLabels = feat.featureExtraction(file)
-        testFeatures += tempTestData
-        testLabels += tempTestLabels
-    pdb.set_trace()
-    
-    #print (len(featureList))
-    for i in range(len(testFeatures)):
-        results = classify1NN(trainingFeatures, trainingLabels, testFeatures[i], testLabels[i])
-        count  = 0
-        for i in range(len(results)):
-            if (results[i] == testLabels[i]):
-                count += 1
-        print (count/len(testLabels))
-    pdb.set_trace()
+        print ("Number of test files = " + str(len(testData)))
+        for file in testData:
+            print ("Extracting features for " + file)
+            symbolList, labelList = getFileStrokeData(file)
+            tempTestData, tempTestLabels = feat.featureExtraction(file, symbolList, \
+                                                                  labelList)
+            testFeatures += tempTestData
+            testLabels += tempTestLabels
+        
+
+        print ("###############################")
+        print ("Training 1-Nearest Neighbor Classifier")
+        nnClassifier = createClassifier(trainingFeatures, trainingLabels)
+        
+        joblib.dump(trainingFeatures, 'trainingFeatures.joblib', compress=3)
+        joblib.dump(trainingLabels, 'trainingLabels.joblib',compress=3)
+    else:
+        trainingFeatures = joblib.load('trainingFeatures.joblib')
+        trainingLabels = joblib.load('trainingLabels.joblib')
+    print ("Training completed")
+    print ("###############################")
     print ("Done Training")
+    error = 0
+    print ("Total test samples = " + str(len(trainingFeatures)))
+    for i in range(len(trainingFeatures)):
+        _class = predict(trainingFeatures, trainingLabels, trainingFeatures[i])
+        #if i % 100 == 0:
+        print(str(i) + ": " + _class + " should be " + str(trainingLabels[i]))
+        if _class != trainingLabels[i]:
+            error += 1
+    print ("Num of samples = " + str(len(trainingFeatures)))
+    print ("Errors = " + str(error))
+    print ("Rate = " + str((1.0 * error)/len(trainingFeatures)))
+        
+    return nnClassifier, trainData, testData, trainingLabels, testLabels
 
-def plotXY(X, Y):
-    errors = 0
-    c = [[0, 0], [0, 0]]
-    for i in range(len(X)):
-        output = classify1NN(X, Y, X[i][1], X[i][2])
-        if Y[i][0] == 0:
-            plt.plot(X[i][1], X[i][2], 'bs')
-            if output < 0.5:
-                c[0][0] += 1
-            else:
-                c[0][1] += 1
-        elif Y[i][0] == 1:
-            plt.plot(X[i][1], X[i][2], 'y*')
-            if output < 0.5:
-                c[1][0] += 1
-            else:
-                c[1][1] += 1
-        else:
-            print("ERROR: Unexpected target value!")
-    errors = c[0][1] + c[1][0]
-    total = len(X)
-    percent = (total - errors)/total * 100
-    print("Classification Rate = %.2f %%" % percent)
-    print("Confusion matrix:")
-    print("                 " + "  Alg. Output")
-    print("                 " + "    0     1")
-    print(" Ground Truth/ 0 " + "   " + str(c[0][0]) + "    " + str(c[0][1]))
-    print("    Target     1 " + "   " + str(c[1][0]) + "    " + str(c[1][1]))
+def getFileStrokeData(csv_file):
+    basename = csv_file[csv_file.rfind('/') + 1:csv_file.rfind('.')]
+    path = csv_file[:csv_file.rfind('/')]
+    path = path[:path.rfind('/') + 1]
+    #lg_file = path + 'lg/' + basename + '.lg'        
+    inkml_file = path + basename + '.inkml'        
+    #csv_file = path + 'csv/' + basename + '.csv'    
+    symbolList, labelList = feat.getStrokeIds(inkml_file)
+    return symbolList, labelList 
+
+def createClassifier(trainingFeatures, trainingLabels):
+    mat = numpy.matrix(trainingFeatures)
+    return mat, trainingLabels
+
+def predict(trainingFeatures, trainingLabels, featureVector):
+    #extendedFeatureMatrix = numpy.matrix([featureVector for i in range(len(trainingLabels))])
+    #diff = numpy.subtract(extendedFeatureMatrix, trainingFeatures)
+    #pdb.set_trace()
+    featureMatrix = numpy.matrix(featureVector)
+    diff = numpy.subtract(trainingFeatures, featureMatrix)
+    squaredDiff = numpy.multiply(diff, diff)
+    distance = numpy.sum(squaredDiff, axis=1)
+    _class = numpy.argmin(distance)
+    return trainingLabels[_class]
     
+def predictOld(trainingFeatures, trainingLabels, featureVector):
+    #extendedFeatureMatrix = numpy.matrix([featureVector for i in range(len(trainingLabels))])
+    #diff = numpy.subtract(extendedFeatureMatrix, trainingFeatures)
+    
+    featureMatrix = numpy.matrix(featureVector)
+    diff = numpy.subtract(trainingFeatures, featureMatrix)
+    squaredDiff = numpy.multiply(diff, diff)
+    distance = numpy.sum(squaredDiff, axis=1)
+    _class = numpy.argmin(distance)
+    return trainingLabels[_class]
 
 def classify1NN(X, Y, f):
     # Find class of nearest neighbor
@@ -82,7 +109,7 @@ def classify1NN(X, Y, f):
         dist = 0
         for n in range(len(X[i])):
             xn = X[i][n]
-            dist += (x1 - f[n]) ** 2
+            dist += (xn - f[n]) ** 2
         if dist < least:
             least = dist
             leastClass = Y[i]
@@ -117,4 +144,4 @@ def classifyAllNN(X, Y, classifier):
             lastoutput = output
     plt.plot(dbX, dbY, 'k.')
 
-getTrainingData()
+getTrainingData(False)
