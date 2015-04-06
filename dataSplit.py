@@ -32,7 +32,7 @@ def readAllInputData():
     trainingFolderPath = "./TrainINKML_v3/"
     trainingPaths = [trainingFolderPath + f + "/" for f in os.listdir(trainingFolderPath) if os.path.isdir(trainingFolderPath + f)]
     # For a specific folder
-    trainingPaths = [trainingFolderPath + "extension/"]
+    #trainingPaths = [trainingFolderPath + "extension/"]
     #trainingPaths = [trainingFolderPath + "MfrDB/"]
     #trainingPaths = [trainingFolderPath + "HAMEX/"]
     #trainingPaths = [trainingFolderPath + "KAIST/"]

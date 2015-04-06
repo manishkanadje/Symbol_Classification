@@ -223,5 +223,6 @@ def findSymbol(inkml_parsed, strokeList):
     return None
 
 if __name__ == "__main__":
-    statsForData(True)
+    shouldTrain = True             # Set this to False to use objects pickled using joblib
+    statsForData(shouldTrain)
 
