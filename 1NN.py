@@ -1,3 +1,10 @@
+###############################################################################
+## parser.py
+##     Used to convert an inkml file to a csv file or to a ground truth lg file
+##
+## Submitted by: Manish Kanadje, Kedarnath Calangutkar
+###############################################################################
+
 import numpy
 from pylab import *
 from sklearn import svm

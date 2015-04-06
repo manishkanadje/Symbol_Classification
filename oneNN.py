@@ -1,19 +1,29 @@
+###############################################################################
+## oneNN.py
+##     1-Nearest Neighbor classifier
+##
+## Submitted by: Manish Kanadje, Kedarnath Calangutkar
+###############################################################################
+
 import numpy
-from pylab import *
-from sklearn import svm
-from sklearn import ensemble
-from xml.dom import minidom
 import pdb
-from sklearn.externals import joblib
-from random import *
 import os
 import threading
+import parser
 
 import normalize as nl
 import features as feat
 import dataSplit as dsp
-import parser
 
+from sklearn.externals import joblib
+from sklearn import svm
+from sklearn import ensemble
+from xml.dom import minidom
+
+from random import *
+from pylab import *
+
+# Extract training data / or load from pickled files
 def getTrainingData(train):
     if train:
         trainData, testData = dsp.updateSplits()
@@ -47,7 +57,6 @@ def getTrainingData(train):
         nnClassifier, trainingLabels = createClassifier(trainingFeatures, trainingLabels)
         
         print ("###############################")
-        #pdb.set_trace()
         joblib.dump(nnClassifier, '1nnClf.joblib', compress = 3)
 
         joblib.dump(trainData, 'trainData.joblib', compress = 3)
@@ -70,119 +79,61 @@ def getTrainingData(train):
         testLabels = joblib.load('testLabels.joblib')
         nnClassifier, trainingLabels = createClassifier(trainingFeatures, trainingLabels)
         print ("###############################")
-    #error = 0
-    #print ("Total test samples = " + str(len(testFeatures)))
-    #for i in range(len(trainingFeatures)):
-    #    _class = predict(trainingFeatures, trainingLabels, testFeatures[i])
-    #    if i % 100 == 0:
-    #        print(str(i) + ": " + _class + " should be " + str(testLabels[i]))
-    #    if _class != testLabels[i]:
-    #        error += 1
-    #print ("Num of samples = " + str(len(testFeatures)))
-    #print ("Errors = " + str(error))
-    #print ("Rate = " + str((1.0 * error)/len(testFeatures)))
         
     return nnClassifier, trainData, testData, trainingLabels, testLabels
 
-def statsForData():
+# Perform training and testing on all of the dataset
+def statsForData(train):
     nnClassifier, trainData, testData, trainLabels, testLabels = \
-       getTrainingData(False)
-    #pdb.set_trace()
+       getTrainingData(train)
     print ("###############################")
     print ("Create lg files for training fold")
-    # performClassification(trainData, nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/')
-    numberOfSplits = 10
+    
+    # Do threading!
+    numberOfThreads = 4
     trainDataList = list(trainData.keys())
-    length = int(len(trainDataList) / numberOfSplits);
-    for i in range(numberOfSplits):
+    length = int(len(trainDataList) / numberOfThreads);
+    for i in range(numberOfThreads):
         print("Creating thread for files from " + str(i * length) + " to " + str((i + 1) * length))
         t = threading.Thread(target=performClassification, args = (trainDataList[i * length:(i + 1) * length], nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/'))
         t.start()
         
-    print("Creating thread for files from " + str(numberOfSplits * length) + " to " + str(trainDataList))
-    t = threading.Thread(target=performClassification, args = (trainDataList[numberOfSplits * length:], nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/'))
+    print("Creating thread for files from " + str(numberOfThreads * length) + " to " + str(trainDataList))
+    t = threading.Thread(target=performClassification, args = (trainDataList[numberOfThreads * length:], nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/'))
     t.start()
     
     print ("###############################")
-    #pdb.set_trace()
     print ("###############################")
     print ("Create lg files for test fold")
     performClassification(testData, nnClassifier, trainLabels, './test_true_lg_NN/', './test_out_lg_NN/')
     print ("###############################")
-    
-def statsForDataRemaining():
-    #pdb.set_trace()
-    nnClassifier, trainData, testData, trainLabels, testLabels = getTrainingData(False)
-    #pdb.set_trace()
-    print ("###############################")
-    print ("Create lg files for training fold")
-    # performClassification(trainData, nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/')
-    numberOfSplits = 2
-    oldTrainDataList = list(trainData.keys())
-    #oldTestDataList = list(testData.keys())
-    done = [f[:f.rfind('.')] for f in os.listdir('./train_out_lg_NN/') if os.path.isfile('./train_out_lg_NN/' + f) and f.endswith(".lg")]
-    trainDataList = [f for f in oldTrainDataList if f[f.rfind('/') + 1:f.rfind('.')] not in done]
-    #testDataList = [f for f in oldTestDataList if f[f.rfind('/') + 1:f.rfind('.')] not in done]
-    #trainDataList += testDataList
-    print(str(trainDataList))
-    length = int(len(trainDataList) / numberOfSplits);
-    print("Length " + str(length))
-    for i in range(numberOfSplits):
-        print("From " + str(i * length) + " to " + str((i + 1) * length))
-        t = threading.Thread(target=performClassification, args = (trainDataList[i * length:(i + 1) * length], nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/'))
-        t.start()
-        
-    print("From " + str(numberOfSplits * length) + " to end")
-    t = threading.Thread(target=performClassification, args = (trainDataList[numberOfSplits * length:], nnClassifier, trainLabels, './train_true_lg_NN/', './train_out_lg_NN/'))
-    t.start()
-    
-    print ("###############################")
-    #pdb.set_trace()
-    print ("###############################")
-    print ("Create lg files for test fold")
-    #performClassification(testData, nnClassifier, trainLabels, './test_true_lg_NN/', './test_out_lg_NN/')
-    print ("###############################")
 
-def performClassification(dataset, classifier, trainLabels, folderNameTrue, folderNameOut):
+# Performs classification on a given dataset. (Can be used to generate ground truth files as well)
+def performClassification(dataset, trainingFeatures, trainLabels, folderNameTrue, folderNameOut):
     for csv_file in dataset:
         basename = csv_file[csv_file.rfind('/') + 1:csv_file.rfind('.')]
         path = csv_file[:csv_file.rfind('/')]
         path = path[:path.rfind('/') + 1]
-        #lg_file = path + 'lg/' + basename + '.lg'        
         inkml_file = path + basename + '.inkml'
-        evaluateFile(classifier, trainLabels, inkml_file, folderNameOut)
-        parser.convertInkmlToLg(inkml_file, folderNameTrue)
+        evaluateFile(trainingFeatures, trainLabels, inkml_file, folderNameOut)
+        # parser.convertInkmlToLg(inkml_file, folderNameTrue)
 
+# Extract stroke data from the inkml file
 def getFileStrokeData(csv_file):
     basename = csv_file[csv_file.rfind('/') + 1:csv_file.rfind('.')]
     path = csv_file[:csv_file.rfind('/')]
     path = path[:path.rfind('/') + 1]
-    #lg_file = path + 'lg/' + basename + '.lg'        
     inkml_file = path + basename + '.inkml'        
-    #csv_file = path + 'csv/' + basename + '.csv'    
     symbolList, labelList = feat.getStrokeIds(inkml_file)
     return symbolList, labelList 
 
+# returns a numpy matrix form of the training features along with the training labels
 def createClassifier(trainingFeatures, trainingLabels):
-    #pdb.set_trace()
     mat = numpy.matrix(trainingFeatures)
     return mat, trainingLabels
 
+# Predicts the class of the given feature vector
 def predict(trainingFeatures, trainingLabels, featureVector):
-    #extendedFeatureMatrix = numpy.matrix([featureVector for i in range(len(trainingLabels))])
-    #diff = numpy.subtract(extendedFeatureMatrix, trainingFeatures)
-    #pdb.set_trace()
-    featureMatrix = numpy.matrix(featureVector)
-    diff = numpy.subtract(trainingFeatures, featureMatrix)
-    squaredDiff = numpy.multiply(diff, diff)
-    distance = numpy.sum(squaredDiff, axis=1)
-    _class = numpy.argmin(distance)
-    return trainingLabels[_class]
-    
-def predictOld(trainingFeatures, trainingLabels, featureVector):
-    #extendedFeatureMatrix = numpy.matrix([featureVector for i in range(len(trainingLabels))])
-    #diff = numpy.subtract(extendedFeatureMatrix, trainingFeatures)
-    
     featureMatrix = numpy.matrix(featureVector)
     diff = numpy.subtract(trainingFeatures, featureMatrix)
     squaredDiff = numpy.multiply(diff, diff)
@@ -190,62 +141,18 @@ def predictOld(trainingFeatures, trainingLabels, featureVector):
     _class = numpy.argmin(distance)
     return trainingLabels[_class]
 
-def classify1NN(X, Y, f):
-    # Find class of nearest neighbor
-    least = 99999
-    leastClass = -1
-    for i in range(len(X)):
-        dist = 0
-        for n in range(len(X[i])):
-            xn = X[i][n]
-            dist += (xn - f[n]) ** 2
-        if dist < least:
-            least = dist
-            leastClass = Y[i]
-    return leastClass[0]
-
-def classifyAllNN(X, Y, classifier):
-    dbX = []
-    dbY = []
-
-    # Scan vertically for changes in class
-    for x in numpy.arange(minX, maxX, granularity):
-        lastoutput = classifier(X, Y, x, minY)
-        for y in numpy.arange(minY, maxY, granularity):
-            output = classifier(X, Y, x, y)
-            if output < 0.5:
-                plt.plot(x, y, 'c.')
-            elif output >= 0.5:
-                plt.plot(x, y, 'y.')
-            if (lastoutput < 0.5 and output >= 0.5) or (lastoutput >= 0.5 and output < 0.5):
-                dbX.append(x)
-                dbY.append(y - granularity/2)
-            lastoutput = output
-
-    # Scan horizontally for changes in class
-    for y in numpy.arange(minY, maxY, granularity):
-        lastoutput = classifier(X, Y, minX, y)
-        for x in numpy.arange(minX, maxX, granularity):
-            output = classifier(X, Y, x, y)
-            if (lastoutput < 0.5 and output >= 0.5) or (lastoutput >= 0.5 and output < 0.5):
-                dbX.append(x - granularity/2)
-                dbY.append(y)
-            lastoutput = output
-    plt.plot(dbX, dbY, 'k.')
-
-def evaluateData(classifier, trainLabels, testFolderPath, folderName):
-    # testFolderPath = "./TrainINKML_v3/"
+# Evaluates all the inkml files in the testFolderPath and stores lg file with same name in folderName
+def evaluateData(trainingFeatures, trainLabels, testFolderPath, folderName):
     files = [testFolderPath + f for f in os.listdir(testFolderPath) if os.path.isfile(testFolderPath + f) and f.endswith(".inkml")]
 
     for inkml_file in files:
-        print('Start evaluating :', inkml_file)
-        evaluateFile(classifier, trainLabels, inkml_file, folderName)
-    
-        
-def evaluateFile(classifier, trainLabels, inkml_file, folderName):
+        print('Start evaluating :' + inkml_file)
+        evaluateFile(trainingFeatures, trainLabels, inkml_file, folderName)
+
+# Evalutes the given inkml file using the provided classifier (i.e. trainingFeatures and trainingLabels) and generates an lg file in folderName
+def evaluateFile(trainingFeatures, trainLabels, inkml_file, folderName):
     basename = inkml_file[inkml_file.rfind('/') + 1 : inkml_file.rfind('.')]
     path = inkml_file[:inkml_file.rfind('/') + 1]
-    #lg_file = path + 'output_lg/' + basename + '.lg'
     lg_file = folderName + basename + '.lg'
     csv_file = path + 'csv/' + basename + '.csv'
     print ("Evaluating " + inkml_file)
@@ -266,15 +173,11 @@ def evaluateFile(classifier, trainLabels, inkml_file, folderName):
     relations = ""
     inkml_parsed = minidom.parse(inkml_file)
     for i in range(len(testFeatures)):
-        result = predict(classifier, trainLabels, testFeatures[i])
-        #print (inkml_file)
-        #if (inkml_file == './TrainINKML_v3/HAMEX/formulaire003-equation038.inkml'):
-        #    pdb.set_trace()
+        result = predict(trainingFeatures, trainLabels, testFeatures[i])
         try:
             symbol_label = findSymbol(inkml_parsed, symbolList[i])
         except:
             pickle.dump(inkml_parsed, open('inkmlp.p', 'wb'))
-            #pdb.set_trace()
         if symbol_label == ',':
             symbol_label = 'COMMA'
         result_symbol = 'COMMA' if result == ',' else result
@@ -287,7 +190,6 @@ def evaluateFile(classifier, trainLabels, inkml_file, folderName):
                 next_symbol_label = findSymbol(inkml_parsed, symbolList[i + 1])
             except:
                 pickle.dump(inkml_parsed, open('inkmlp.p', 'wb'))
-                #pdb.set_trace()
             if next_symbol_label == ',':
                 next_symbol_label = 'COMMA'
             relations += "R, " + symbol_label + ", " + next_symbol_label + ", Right, 1.0\n"
@@ -297,10 +199,10 @@ def evaluateFile(classifier, trainLabels, inkml_file, folderName):
     
     lg.close()
 
+# Returns the label for this symbol from the inkml file
 def findSymbol(inkml_parsed, strokeList):
     traceGroups = inkml_parsed.getElementsByTagName('traceGroup')[0].getElementsByTagName('traceGroup')
     symbolList, labelList = [], []
-    #pdb.set_trace()
     for tGroup in traceGroups:
         stroke_id = None
         stroke_found = True 
@@ -320,5 +222,6 @@ def findSymbol(inkml_parsed, strokeList):
         
     return None
 
-statsForData()
+if __name__ == "__main__":
+    statsForData(True)
 

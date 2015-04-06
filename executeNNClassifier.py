@@ -1,8 +1,16 @@
+###############################################################################
+## executeNNClassifier.py
+##     script to execute the nearestneighbor classifier
+##     on a specified dataset using pre-trained classifier
+##
+## Submitted by: Manish Kanadje, Kedarnath Calangutkar
+###############################################################################
+
+import sys
+import oneNN as nn
 from sklearn.externals import joblib
 
-import oneNN as nn
-import sys
-
+# Print usage help
 def printUsage():
     print ("Usage:")
     print ("         executeNNClassifier.py training_features_joblib training_labels_joblib test_folder output_folder")
@@ -12,6 +20,7 @@ def printUsage():
     print (" test_folder               : full path of folder containing inkml files (should end with a '/')")
     print (" output_folder             : full path of folder to output lg files (should end with a '/')")
 
+# main method
 def main():
     if len(sys.argv) != 5:
         printUsage()

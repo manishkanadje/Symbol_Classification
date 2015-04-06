@@ -1,18 +1,28 @@
-from pylab import *
-import normalize as nl
-from random import *
-import pdb
-import scipy.stats
+###############################################################################
+## dataSplit.py
+##     module to split the data into 2/3 training set and 1/3 test 
+##     set
+##
+## Submitted by: Manish Kanadje, Kedarnath Calangutkar
+###############################################################################
+
 import os
 import parser
 import fnmatch
+import scipy.stats
+
+import normalize as nl
 import features as feat
-import copy
+
+from pylab import *
+from random import *
+from copy import deepcopy
 
 dataPriorList = []
 RANDOM_SWAPS = 1000
 RANDOM_POINTS = 1
 
+# Reads input data from the dataset
 def readAllInputData():
     # Final Data Structures
     fileLabelsData = {}
@@ -22,34 +32,26 @@ def readAllInputData():
     trainingFolderPath = "./TrainINKML_v3/"
     trainingPaths = [trainingFolderPath + f + "/" for f in os.listdir(trainingFolderPath) if os.path.isdir(trainingFolderPath + f)]
     # For a specific folder
-    #trainingPaths = [trainingFolderPath + "extension/"]
+    trainingPaths = [trainingFolderPath + "extension/"]
     #trainingPaths = [trainingFolderPath + "MfrDB/"]
     #trainingPaths = [trainingFolderPath + "HAMEX/"]
     #trainingPaths = [trainingFolderPath + "KAIST/"]
     
     for i in range(len(trainingPaths)):
-    #for i in range(6):
         path = trainingPaths[i]
         files = [path + f for f in os.listdir(path) if os.path.isfile(path + f) and f.endswith(".inkml")]
-        # for a specific file in that folder
-        # files = [path + 'MfrDB0033.inkml']
-        #files = files[0:999]
         for inkml_file in files:
             print('Start processing :', inkml_file)
                 
             basename = inkml_file[inkml_file.rfind('/') + 1:inkml_file.rfind('.')]
             path = inkml_file[:inkml_file.rfind('/') + 1]
-            #lg_file = path + 'lg/' + basename + '.lg'        
             inkmlFile = path + basename + '.inkml'        
             csv_file = path + 'csv/' + basename + '.csv'
             
             if not os.path.exists(csv_file):
                 parser.convertStrokesToCsv(inkml_file)
-            #if not os.path.exists(lg_file):
-            #    parser.convertInkmlToLg(inkml_file)
 
-            # Dictionary which contains the list of symbols which are present
-            # in csv_files
+            # Dictionary which contains the list of symbols which are present in csv_files
             symbolList, labelList = feat.getStrokeIds(inkmlFile)
             fileLabelsData[csv_file] = labelList
             for label in labelList:
@@ -59,8 +61,7 @@ def readAllInputData():
                     labelPriors[label] += 1
             labelCount += 1
             
-        #pdb.set_trace()
-    print ("Total Number of Symbols in the dataset", len(labelPriors.keys()))
+    print ("Total Number of Symbols in the dataset" + str(len(labelPriors.keys())))
     return labelPriors, fileLabelsData, labelCount
 
 # Create training and test splits based on distribution
@@ -90,6 +91,7 @@ def createSplits():
     return fileLabelData, labelPriors, labelCount - testCount, testData, \
         testPriors, testCount
 
+# Update the splits to decrease the KL divergence
 def updateSplits():
     global dataPriorList, RANDOM_SWAPS
     trainData, trainPriors, trainCount, testData, testPriors, testCount = \
@@ -111,24 +113,19 @@ def updateSplits():
         testCountList.append(testPriors[label])
         trainPriorList.append(trainPriors[label]/float(trainCount))
         testPriorList.append(testPriors[label]/float(testCount))
-    #pdb.set_trace()
     print ("###############################")
     print ("Initial KL Divergence")
     divergenceKL = scipy.stats.entropy(trainPriorList, dataPriorList)
     print (divergenceKL)
     print ("###############################")
-    #pdb.set_trace()
     for i in range(RANDOM_SWAPS):
         swapTrainElements, swapTrainList, swapTestElements, swapTestList = \
             swapDistributions(trainData, \
             trainLabelList, trainCountList, trainPriorList, trainCount,
              testData, testLabelList, testCountList, testPriorList, testCount)
-        #pdb.set_trace()
         print ("###############################")
         print ("KL Divergence after swap", i + 1)
 
-        #if i > 0:
-        #    print (scipy.stats.entropy(swapTrainList, prevTrainList))
         updateDKL = scipy.stats.entropy(swapTrainList, dataPriorList)
         prevTrainList = swapTrainList
         print (updateDKL)
@@ -138,9 +135,7 @@ def updateSplits():
             swapDataFromDict(trainData, testData, swapTrainElements)
             swapDataFromDict(testData, trainData, swapTestElements)
             divergenceKL = updateDKL
-    #pdb.set_trace()
 
-    # Debug
     print ("###############################")
     print ("Train test check")
     print ("Name of file which is coommon in training and test data")
@@ -150,14 +145,14 @@ def updateSplits():
             print (trainfile)
     print ("###############################")
     return trainData, testData
-    print ("Done")
-    
 
+# swap files from/to train/test sets
 def swapDataFromDict(data1, data2, swapList):
     for entry in swapList:
         data1.pop(entry[0], entry[1])
         data2[entry[0]] = entry[1]
-            
+
+# swap files in the distributions based on priors
 def swapDistributions(trainData, trainLabelList, trainCountList, trainPriorList,\
                       trainCount, testData, testLabelList, testCountList, \
                         testPriorList, testCount):
@@ -167,10 +162,10 @@ def swapDistributions(trainData, trainLabelList, trainCountList, trainPriorList,
     testKeyValueList = []
     trainFileNameList = list(trainData.keys())
     testFileNameList = list(testData.keys())
-    updateTrainCountList = copy.deepcopy(trainCountList)
-    updateTestCountList = copy.deepcopy(testCountList)
-    updateTrainPriorList = copy.deepcopy(trainPriorList)
-    updateTestPriorList = copy.deepcopy(testPriorList)
+    updateTrainCountList = deepcopy(trainCountList)
+    updateTestCountList = deepcopy(testCountList)
+    updateTrainPriorList = deepcopy(trainPriorList)
+    updateTestPriorList = deepcopy(testPriorList)
     for j in range(RANDOM_POINTS):
         i = randrange(0, len(trainFileNameList))
         # Swap from train data
@@ -204,4 +199,3 @@ def swapDistributions(trainData, trainLabelList, trainCountList, trainPriorList,
     return trainKeyValueList, updateTrainPriorList, testKeyValueList, \
       updateTestPriorList
 
-#updateSplits()

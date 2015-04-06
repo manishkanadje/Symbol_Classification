@@ -1,13 +1,11 @@
-#from pylab import *
-from sklearn import svm
-from sklearn import ensemble
-from sklearn.externals import joblib
-from xml.dom import minidom
-import pdb
+###############################################################################
+## rfClassifier.py
+##     Random Forest classifier
+##
+## Submitted by: Manish Kanadje, Kedarnath Calangutkar
+###############################################################################
+
 import os
-import pickle
-from random import *
-from sklearn import metrics
 import pickle
 import parser
 
@@ -15,6 +13,15 @@ import normalize as nl
 import features as feat
 import dataSplit as dsp
 
+from sklearn import svm
+from sklearn import metrics
+from sklearn import ensemble
+from sklearn.externals import joblib
+from xml.dom import minidom
+
+from random import *
+
+# Get all the files in the dataset as training data
 def getAllFiles():
     trainData = {}
     trainingFolderPath = "./TrainINKML_v3/"
@@ -24,7 +31,7 @@ def getAllFiles():
         path = trainingPaths[i]
         files = [path + f for f in os.listdir(path) if os.path.isfile(path + f) and f.endswith(".inkml")]
         for inkml_file in files:
-            print('Start processing :', inkml_file)
+            print('Start processing :' + inkml_file)
             basename = inkml_file[inkml_file.rfind('/') + 1:inkml_file.rfind('.')]
             path = inkml_file[:inkml_file.rfind('/') + 1]
             lg_file = path + 'lg/' + basename + '.lg'        
@@ -32,12 +39,11 @@ def getAllFiles():
             
             if not os.path.exists(csv_file):
                 parser.convertStrokesToCsv(inkml_file)
-            #if not os.path.exists(lg_file):
-                #parser.convertInkmlToLg(inkml_file)
             
             trainData[csv_file] = 0
     return trainData
 
+# Get all data as training data
 def getAllTrainingData():
     trainData = getAllFiles()
     trainingFeatures = []
@@ -60,10 +66,10 @@ def getAllTrainingData():
 
     joblib.dump(rndClassifier, 'all_rndClf.joblib', compress = 3)
 
-    #joblib.dump(trainData, 'trainData.joblib', compress = 3)
     joblib.dump(trainingFeatures, 'trainingFeatures.joblib', compress = 3)
     joblib.dump(trainingLabels, 'trainingLabels.joblib', compress = 3)
 
+# Get training data (using split or from pickled files)
 def getTrainingData(trainFlag):
     if (trainFlag):
         trainData, testData = dsp.updateSplits()
@@ -72,12 +78,8 @@ def getTrainingData(trainFlag):
 
         testFeatures = []
         testLabels = []
-        #featureList, labelList = feat.fileCall()
-        #pdb.set_trace()
-        #svmClassifier = svm.SVC()
+
         for file in trainData:
-            #pdb.set_trace()
-            #trainingFeatures, trainingLabels = feat.featureExtraction(file)
             symbolList, labelList = getFileStrokeData(file)
             tempTrainData, tempTrainLabels = feat.featureExtraction(file, \
                                                     symbolList,labelList)
@@ -85,13 +87,12 @@ def getTrainingData(trainFlag):
             trainingLabels += tempTrainLabels
 
         for file in testData:
-            #testFeatures, testLabels = feat.featureExtraction(file)
             symbolList, labelList = getFileStrokeData(file)
             tempTestData, tempTestLabels = feat.featureExtraction(file, symbolList, \
                                                               labelList)
             testFeatures += tempTestData
             testLabels += tempTestLabels
-        #pdb.set_trace()
+            
         rndClassifier = ensemble.RandomForestClassifier(n_estimators = 500, max_depth = 18)
 
         print ("###############################")
@@ -99,7 +100,7 @@ def getTrainingData(trainFlag):
         rndClassifier.fit(trainingFeatures, trainingLabels)
         print ("Training completed")
         print ("###############################")
-        #pdb.set_trace()
+
         joblib.dump(rndClassifier, 'rndClf.joblib', compress = 3)
 
         joblib.dump(trainData, 'trainData.joblib', compress = 3)
@@ -121,11 +122,7 @@ def getTrainingData(trainFlag):
         testFeatures = joblib.load('testFeatures.joblib')
         testLabels = joblib.load('testLabels.joblib')
         print ("###############################")
-    #print (len(featureList))
-    #trainData, trainLabels, testData, testLabels = splitData(featureList, labelList)
-    #svmClassifier.fit(trainData, trainLabels)
-    #print len(trainData)
-    #print len(testData)
+
     print ("###############################")
     print ("Classification rate for train data on symbol basis:")
     results = rndClassifier.predict(trainingFeatures)
@@ -145,44 +142,42 @@ def getTrainingData(trainFlag):
             count += 1
     print (count/float(len(testLabels)))
     print ("###############################")
-    #pdb.set_trace()
-    #print ("Done Training")
+
     return rndClassifier, trainData, testData, trainingLabels, testLabels
 
+# Perform classification on the given dataset. (Can be used to generate ground truth files as well)
 def performClassification(dataset, classifier, folderNameTrue, folderNameOut):
     for csv_file in dataset:
         basename = csv_file[csv_file.rfind('/') + 1:csv_file.rfind('.')]
         path = csv_file[:csv_file.rfind('/')]
         path = path[:path.rfind('/') + 1]
-        #lg_file = path + 'lg/' + basename + '.lg'        
         inkml_file = path + basename + '.inkml'
         evaluateFile(classifier, inkml_file, folderNameOut)
-        parser.convertInkmlToLg(inkml_file, folderNameTrue)
-        
-def statsForData():
+        # parser.convertInkmlToLg(inkml_file, folderNameTrue)
+
+# Perform training and testing on all of the dataset
+def statsForData(train):
     rndClassifier, trainData, testData, trainLabels, testLabels = \
-       getTrainingData(True)
-    #pdb.set_trace()
+       getTrainingData(train)
     print ("###############################")
     print ("Create lg files for training fold")
     performClassification(trainData, rndClassifier, './train_true_lg/', './train_out_lg/')
     print ("###############################")
-    #pdb.set_trace()
     print ("###############################")
     print ("Create lg files for test fold")
     performClassification(testData, rndClassifier, './test_true_lg/', './test_out_lg/')
     print ("###############################")
 
+# Extract stroke data from the inkml file
 def getFileStrokeData(csv_file):
     basename = csv_file[csv_file.rfind('/') + 1:csv_file.rfind('.')]
     path = csv_file[:csv_file.rfind('/')]
     path = path[:path.rfind('/') + 1]
-    #lg_file = path + 'lg/' + basename + '.lg'        
     inkml_file = path + basename + '.inkml'        
-    #csv_file = path + 'csv/' + basename + '.csv'    
     symbolList, labelList = feat.getStrokeIds(inkml_file)
     return symbolList, labelList 
-    
+
+# Split the data
 def splitData(features, labels):
     testData = []
     testLabels = []
@@ -193,20 +188,19 @@ def splitData(features, labels):
         testData.append(features.pop(index))
         testLabels.append(labels.pop(index))
     return features, labels, testData, testLabels
-        
+
+# Evaluates all the inkml files in the testFolderPath and stores lg file with same name in folderName
 def evaluateData(rndClassifier, testFolderPath, folderName):
-    # testFolderPath = "./TrainINKML_v3/"
     files = [testFolderPath + f for f in os.listdir(testFolderPath) if os.path.isfile(testFolderPath + f) and f.endswith(".inkml")]
 
     for inkml_file in files:
-        print('Start evaluating :', inkml_file)
+        print('Start evaluating :' + inkml_file)
         evaluateFile(rndClassifier, inkml_file, folderName)
-    
-        
+
+# Evalutes the given inkml file using the provided classifier (i.e. trainingFeatures and trainingLabels) and generates an lg file in folderName
 def evaluateFile(rndClassifier, inkml_file, folderName):
     basename = inkml_file[inkml_file.rfind('/') + 1 : inkml_file.rfind('.')]
     path = inkml_file[:inkml_file.rfind('/') + 1]
-    #lg_file = path + 'output_lg/' + basename + '.lg'
     lg_file = folderName + basename + '.lg'
     csv_file = path + 'csv/' + basename + '.csv'
 
@@ -226,14 +220,11 @@ def evaluateFile(rndClassifier, inkml_file, folderName):
     relations = ""
     inkml_parsed = minidom.parse(inkml_file)
     for i in range(len(results)):
-        #print (inkml_file)
-        #if (inkml_file == './TrainINKML_v3/HAMEX/formulaire003-equation038.inkml'):
-        #    pdb.set_trace()
         try:
             symbol_label = findSymbol(inkml_parsed, symbolList[i])
         except:
             pickle.dump(inkml_parsed, open('inkmlp.p', 'wb'))
-            pdb.set_trace()
+        # replace comma with string 'COMMA' to avoid errors in parsing lg
         if symbol_label == ',':
             symbol_label = 'COMMA'
         result_symbol = 'COMMA' if results[i] == ',' else results[i]
@@ -246,7 +237,6 @@ def evaluateFile(rndClassifier, inkml_file, folderName):
                 next_symbol_label = findSymbol(inkml_parsed, symbolList[i + 1])
             except:
                 pickle.dump(inkml_parsed, open('inkmlp.p', 'wb'))
-                pdb.set_trace()
             if next_symbol_label == ',':
                 next_symbol_label = 'COMMA'
             relations += "R, " + symbol_label + ", " + next_symbol_label + ", Right, 1.0\n"
@@ -256,10 +246,10 @@ def evaluateFile(rndClassifier, inkml_file, folderName):
     
     lg.close()
 
+# Returns the label for this symbol from the inkml file
 def findSymbol(inkml_parsed, strokeList):
     traceGroups = inkml_parsed.getElementsByTagName('traceGroup')[0].getElementsByTagName('traceGroup')
     symbolList, labelList = [], []
-    #pdb.set_trace()
     for tGroup in traceGroups:
         stroke_id = None
         stroke_found = True 
@@ -279,9 +269,6 @@ def findSymbol(inkml_parsed, strokeList):
         
     return None
 
+if __name__ == "__main__":
+    statsForData(True)
 
-
-#rndClassifier = getTrainingData()
-#evaluateData(rndClassifier, "./TrainINKML_v3/extension/", "./out_lg/")
-#statsForData()
-getAllTrainingData()
